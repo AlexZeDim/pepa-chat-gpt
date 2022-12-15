@@ -18,7 +18,6 @@ import {
   BullQueueInject,
 } from '@anchan828/nest-bullmq';
 
-
 @Injectable()
 @BullQueueEvents({ queueName: chatQueue.name, options: chatQueue.workerOptions })
 export class AppService implements OnApplicationBootstrap {
@@ -31,8 +30,7 @@ export class AppService implements OnApplicationBootstrap {
     private readonly redisService: Redis,
     @BullQueueInject(chatQueue.name)
     private readonly queue: Queue<MessageJobInterface, MessageJobResInterface>,
-  ) {
-  }
+  ) { }
 
   async onApplicationBootstrap() {
     this.client = new Client({
@@ -81,8 +79,7 @@ export class AppService implements OnApplicationBootstrap {
 
   @BullQueueEventsListener("completed")
   public async completed(args: BullQueueEventsListenerArgs["completed"]): Promise<void> {
-    console.debug(`[${args.jobId}] completed`);
-
+    this.logger.log(`[${args.jobId}] completed`);
 
     const j = await Job.fromId(this.queue, args.jobId);
     console.log(j.returnvalue);
