@@ -6,6 +6,7 @@ export interface MessageJobInterface {
   readonly content: string;
   readonly author: User;
   readonly reference: MessageReference;
+  readonly token?: string;
 }
 
 export interface MessageJobResInterface {
