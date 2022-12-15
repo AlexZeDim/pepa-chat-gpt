@@ -1,4 +1,10 @@
-import { chatQueue, OPENAI_MODEL_ENGINE, randInBetweenInt } from '@app/shared';
+import {
+  chatQueue,
+  MessageJobInterface,
+  MessageJobResInterface,
+  OPENAI_MODEL_ENGINE,
+  randInBetweenInt,
+} from '@app/shared';
 import { BullWorker, BullWorkerProcess } from '@anchan828/nest-bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
@@ -25,24 +31,23 @@ export class ChatWorker {
   ) { }
 
   @BullWorkerProcess(chatQueue.workerOptions)
-  public async process(job: Job<Message, void>): Promise<void> {
-    console.log(job);
-    const message = { ...job.data };
-    console.log(message);
+  public async process(job: Job<MessageJobInterface, MessageJobResInterface>): Promise<MessageJobResInterface> {
+    const { id, author, channelId, content, reference } = { ...job.data };
+    console.log(id, author, channelId, content, reference);
 
     // TODO cover with logger & bull log?
 
     let dialogContext: string[];
-    let userIdOriginalPoster: string = message.author.id;
-    console.log(message.reference);
-    if (message.reference) {
-      const originalRefMessageId = await this.redisService.get(message.reference.messageId);
+    let userIdOriginalPoster: string = author.id;
+
+    if (reference) {
+      const originalRefMessageId = await this.redisService.get(reference.messageId);
       if (!originalRefMessageId) {
         // TODO reference exists but no original message found
         return;
       }
 
-      this.logger.debug(`RefM: ${message.reference.messageId} => OriginalM: ${originalRefMessageId}`);
+      this.logger.debug(`RefM: ${reference.messageId} => OriginalM: ${originalRefMessageId}`);
 
       const originalPosterUserId = await this.redisService.get(originalRefMessageId);
       if (originalPosterUserId) {
@@ -59,8 +64,8 @@ export class ChatWorker {
      */
     const userDialogExists = !!await this.redisService.exists(userIdOriginalPoster);
 
-    await this.redisService.set(message.id, userIdOriginalPoster, 'EX', 900);
-    await this.redisService.sadd(userIdOriginalPoster, `You: ${message.content}`);
+    await this.redisService.set(id, userIdOriginalPoster, 'EX', 900);
+    await this.redisService.sadd(userIdOriginalPoster, `You: ${content}`);
 
     if (userDialogExists) {
       dialogContext = await this.redisService.smembers(userIdOriginalPoster);
@@ -68,6 +73,8 @@ export class ChatWorker {
     }
 
     await this.redisService.expire(userIdOriginalPoster, 900);
+
+    console.log(dialogContext);
 
     const { data } = await this.chatEngine.createCompletion({
       model: OPENAI_MODEL_ENGINE.ChatGPT3,
@@ -88,11 +95,13 @@ export class ChatWorker {
     }
 
     const [responseChoice] = data.choices;
+    console.log(responseChoice);
 
     await this.redisService.sadd(userIdOriginalPoster, responseChoice.text);
 
-/*    const channel = message.channel as GuildTextBasedChannel;
-
-    await channel.send('sdfsd');*/
+    return {
+      response: responseChoice.text,
+      channelId,
+    };
   }
 }

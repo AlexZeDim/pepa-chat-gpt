@@ -1,24 +1,36 @@
+import Redis from 'ioredis';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { GatewayIntentBits } from 'discord-api-types/v10';
-import Redis from 'ioredis';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Client, Events, Message, Partials } from 'discord.js';
+import { Client, Events, Partials, TextChannel } from 'discord.js';
+import { Job, Queue } from 'bullmq';
 
-import * as process from 'process';
-import { chatQueue, OPENAI_MODEL_ENGINE, randInBetweenInt } from '@app/shared';
-import { BullQueueInject } from '@anchan828/nest-bullmq';
-import { Queue } from 'bullmq';
+import {
+  chatQueue,
+  MessageJobInterface,
+  MessageJobResInterface,
+} from '@app/shared';
+
+import {
+  BullQueueEvents,
+  BullQueueEventsListener,
+  BullQueueEventsListenerArgs,
+  BullQueueInject,
+} from '@anchan828/nest-bullmq';
+
 
 @Injectable()
+@BullQueueEvents({ queueName: chatQueue.name, options: chatQueue.workerOptions })
 export class AppService implements OnApplicationBootstrap {
   private readonly logger = new Logger(AppService.name, { timestamp: true });
   private client: Client;
+  private channel: TextChannel;
 
   constructor(
     @InjectRedis()
     private readonly redisService: Redis,
     @BullQueueInject(chatQueue.name)
-    private readonly queue: Queue<Message, void>,
+    private readonly queue: Queue<MessageJobInterface, MessageJobResInterface>,
   ) {
   }
 
@@ -43,6 +55,7 @@ export class AppService implements OnApplicationBootstrap {
   }
 
   async loadBot() {
+    await this.redisService.flushall();
     await this.client.login(process.env.DISCORD_TOKEN);
   }
 
@@ -52,46 +65,34 @@ export class AppService implements OnApplicationBootstrap {
     );
 
     this.client.on(Events.MessageCreate, async (message) => {
+      if (message.author.id === this.client.user.id || message.author.bot) return;
+
       this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
-      if (message.content) await this.queue.add(message.id, message,{ jobId: message.id });
+
+      const { id, author, channelId, content, reference } = message;
+
+      if (message.content) await this.queue.add(
+        message.id,
+        { id, author, channelId, content, reference },
+        { jobId: message.id }
+      );
     });
   }
 
-  async test() {
-    /*const { data } = await this.chatEngine.createCompletion({
-      model: OPENAI_MODEL_ENGINE.ChatGPT3,
-      prompt: ["You: Привет, ты играешь в World of Warcraft?"],
-      temperature: 0.5,
-      max_tokens: randInBetweenInt(60, 999),
-      top_p: 1.0,
-      frequency_penalty: 0.5,
-      presence_penalty: 0.0,
-      stop: ["You:"],
-    });
+  @BullQueueEventsListener("completed")
+  public async completed(args: BullQueueEventsListenerArgs["completed"]): Promise<void> {
+    console.debug(`[${args.jobId}] completed`);
 
-    console.log(data);
-    const [choice] = data.choices;
 
-    const response = await this.chatEngine.createCompletion({
-      model: OPENAI_MODEL_ENGINE.ChatGPT3,
-      // "You: What have you been up to?\nFriend: Watching old movies.\nYou: Did you watch anything interesting?\nFriend:"
-      prompt: [`You: Привет, ты играешь в World of Warcraft?`, choice.text, `You: Здорово, я люблю играть на монахе, а ты?`],
-      temperature: 0.5,
-      max_tokens: randInBetweenInt(60, 999),
-      top_p: 1.0,
-      frequency_penalty: 0.5,
-      presence_penalty: 0.0,
-      stop: ["You:"],
-    });
+    const j = await Job.fromId(this.queue, args.jobId);
+    console.log(j.returnvalue);
 
-    console.log(response.data);*/
-    await this.redisService.sadd('1', 1, 2);
+    try {
+      this.channel = await this.client.channels.fetch(j.returnvalue.channelId) as TextChannel;
 
-    const a = await this.redisService.smembers('1');
-
-    const e = !!await this.redisService.exists('1');
-    const e1 = !!await this.redisService.exists('2');
-
-    console.log(e, e1);
+      await this.channel.send(j.returnvalue.response);
+    } catch (e) {
+     this.logger.log(`Unable to send message, somehow!`);
+    }
   }
 }
