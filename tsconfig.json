@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "lib": ["ES2020"],
+    "esModuleInterop": true,
+    "module": "NodeNext",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
+    "moduleResolution": "Node",
+    "target": "esnext",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",

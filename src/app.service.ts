@@ -51,28 +51,15 @@ export class AppService implements OnApplicationBootstrap {
       },
     });
 
-    // await this.test();
+    await this.test();
 
-    await this.loadBot(true);
+    // await this.loadBot(true);
 
-    await this.bot();
+    // await this.bot();
   }
 
   async test() {
-    await this.redisService.rpush('123', 'test1');
-    await this.redisService.rpush('123', 'test2');
-    await this.redisService.rpush('123', 'test3');
-    await this.redisService.rpush('123', 'test4');
-    await this.redisService.rpush('123', 'test5');
 
-
-    const s = await this.redisService.lrange('123', 0, 10);
-    console.log(s);
-
-    await this.redisService.del('123');
-
-    const s1 = await this.redisService.lrange('123', 0, 10);
-    console.log(s1);
   }
 
   async loadBot(resetContext: boolean = false) {
@@ -94,11 +81,16 @@ export class AppService implements OnApplicationBootstrap {
     this.client.on(Events.MessageCreate, async (message) => {
       if (message.author.id === this.client.user.id || message.author.bot) return;
 
+      // TODO check if pepa mentioned somehow
+
+      // TODO not every message but probability of it
+
       await message.channel.sendTyping();
       this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
 
       const { id, author, channelId, content, reference } = message;
 
+      // TODO random key query from array;
       const token = process.env.OPENAI_API_KEY_2
 
       if (message.content) await this.queue.add(
