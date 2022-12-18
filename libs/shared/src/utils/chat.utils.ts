@@ -11,4 +11,4 @@ export const randInBetweenInt = (min: number, max: number) => Math.floor(Math.ra
  * @param max {number} Maximum float
  * @param decimals {number} Precision value
  */
-export const randInBetweenFloat = (min: number, max: number, decimals: number) => (Math.random() * (max - min) + min).toFixed(decimals);
+export const randInBetweenFloat = (min: number, max: number, decimals: number) => Number((Math.random() * (max - min) + min).toFixed(decimals));

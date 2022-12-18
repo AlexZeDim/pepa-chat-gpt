@@ -6,32 +6,36 @@ import { Client, Events, Partials, TextChannel } from 'discord.js';
 import { Job, Queue } from 'bullmq';
 import { Configuration, OpenAIApi } from 'openai';
 import { setTimeout } from 'node:timers/promises';
+import { Interval } from '@nestjs/schedule';
+import { ChatService } from './chat/chat.service';
 
 import {
   chatQueue,
   MessageJobInterface,
   MessageJobResInterface,
   OPENAI_MODEL_ENGINE,
+  PEPA_STORAGE_KEYS,
+  PEPA_TRIGGER_FLAG,
 } from '@app/shared';
 
 import {
-  BullQueueEvents,
-  BullQueueEventsListener,
-  BullQueueEventsListenerArgs,
-  BullQueueInject, BullWorker,
+  BullQueueInject,
+  BullWorker,
   BullWorkerProcess,
 } from '@anchan828/nest-bullmq';
 
+
 @Injectable()
 @BullWorker({ queueName: chatQueue.name, options: chatQueue.workerOptions })
-@BullQueueEvents({ queueName: chatQueue.name, options: chatQueue.workerOptions })
 export class AppService implements OnApplicationBootstrap {
   private readonly logger = new Logger(AppService.name, { timestamp: true });
   private client: Client;
   private channel: TextChannel;
   private chatConfiguration: Configuration;
   private chatEngine: OpenAIApi;
+  private storageEmojisLength: number;
   constructor(
+    private chatService: ChatService,
     @InjectRedis()
     private readonly redisService: Redis,
     @BullQueueInject(chatQueue.name)
@@ -44,6 +48,7 @@ export class AppService implements OnApplicationBootstrap {
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildPresences,
         GatewayIntentBits.MessageContent,
       ],
       presence: {
@@ -51,54 +56,132 @@ export class AppService implements OnApplicationBootstrap {
       },
     });
 
+    await this.loadBot(true);
+
+    await this.bot();
+
     await this.test();
-
-    // await this.loadBot(true);
-
-    // await this.bot();
   }
 
-  async test() {
 
+  private async test() {
+
+
+    // TODO
+    // const dayjsLocal = dayjs();
+    // console.log(dayjsLocal.hour(), dayjsLocal.minute(), dayjsLocal.weekday());
+
+    // if (dayjsLocal.weekday() === 6) {
+      // TODO wednesday
+      //    10:10 open
+      //    11:00 did you loot any good loot?
+      //    20:00 raid time din-din-din
+
+      // TODO check presence
+
+      // TODO среда четверг понедельник вторник 20:00 raid time din-din-din
+
+      // TODO tuesday 22:00 20-key-push
+
+
+    // }
+
+
+    /*
+    await setTimeout(10_000);
+    const guild = await this.client.guilds.fetch('217529277489479681');
+    const nims = await guild.members.fetch({ user: '176208064217743361', withPresences: true, force: true });
+    console.log(nims.presence)*/
   }
 
-  async loadBot(resetContext: boolean = false) {
+
+  private async loadBot(resetContext: boolean = false) {
     if (resetContext) {
       await this.redisService.flushall();
       this.logger.warn(`resetContext set to ${resetContext}`);
     }
+
+    this.chatService.initDayJs();
+
     await this.client.login(process.env.DISCORD_TOKEN);
   }
 
-  async bot() {
-    this.client.on(Events.ClientReady, async () =>
-      this.logger.log(`Logged in as ${this.client.user.tag}!`),
+  private async storage() {
+    const guild = await this.client.guilds.fetch('217529277489479681');
+
+    for (const emoji of guild.emojis.cache.values()) {
+      if (emoji.name.toLowerCase().includes('pep')) {
+        await this.redisService.rpush(PEPA_STORAGE_KEYS.EMOJIS, emoji.id);
+        this.logger.log(`Add ${emoji.name} emoji to storage`);
+      }
+    }
+
+    this.storageEmojisLength = await this.redisService.llen(PEPA_STORAGE_KEYS.EMOJIS);
+    this.logger.log(`Inserted ${this.storageEmojisLength} pepe emoji!`);
+  }
+
+  private async bot() {
+    this.client.on(Events.ClientReady, async () => {
+        this.logger.log(`Logged in as ${this.client.user.tag}!`);
+        await this.storage();
+      }
     );
 
     /**
      * @description Doesn't trigger itself & other bots as-well.
      */
     this.client.on(Events.MessageCreate, async (message) => {
-      if (message.author.id === this.client.user.id || message.author.bot) return;
+      try {
+        if (message.author.id === this.client.user.id || message.author.bot) return;
 
-      // TODO check if pepa mentioned somehow
+        let content = message.content;
 
-      // TODO not every message but probability of it
+        const regex = new RegExp('^пеп');
+        // TODO check before was isMentioned active for some time for dialog via redis
+        const isMentioned = content.split(' ').filter(Boolean).some(s => regex.test(s.toLowerCase()));
 
-      await message.channel.sendTyping();
-      this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
+        const triggerFlag = await this.chatService.diceRollerFullHouse(!!content, !!message.attachments.size, isMentioned);
 
-      const { id, author, channelId, content, reference } = message;
+        if (triggerFlag === PEPA_TRIGGER_FLAG.EMOJI) {
+          await this.chatService.chatPepeReaction(this.client, message, 0, this.storageEmojisLength);
+        }
 
-      // TODO random key query from array;
-      const token = process.env.OPENAI_API_KEY_2
+        if (triggerFlag === PEPA_TRIGGER_FLAG.MESSAGE) {
+          await message.channel.sendTyping();
+          this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
 
-      if (message.content) await this.queue.add(
-        message.id,
-        { id, author, channelId, token, content, reference },
-        { jobId: message.id }
-      );
+          const { id, author, channelId, reference } = message;
+
+          const token = process.env.OPENAI_API_KEY_2
+
+          await this.queue.add(message.id, { id, author, channelId, token, content, reference });
+        }
+      } catch (e) {
+        console.error(e);
+      }
     });
+  }
+
+  @Interval(300_000)
+  async idleReaction() {
+    try {
+      const flag = await this.chatService.diceRollerFullHouse(false, false, false);
+      switch (flag) {
+        case PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST:
+          console.log('Oranges are $0.59 a pound.');
+          break;
+        case PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT:
+        case PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY:
+        case PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY:
+          console.log('Mangoes and papayas are $2.79 a pound.');
+          // expected output: "Mangoes and papayas are $2.79 a pound."
+          break;
+        default:
+          console.log(`Sorry, we are out of.`);
+      }
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   @BullWorkerProcess(chatQueue.workerOptions)
@@ -108,7 +191,7 @@ export class AppService implements OnApplicationBootstrap {
 
       const { id, author, channelId, token, content, reference } = { ...job.data };
 
-      let dialogContext: string[] = [`${author.id}: Привет, кто ты?', 'Пепа: Привет! Я - Пепа. Я люблю играть в World of Warcraft за монаха. Ходить в ключи и лутать шмотки.`];
+      let dialogContext = this.chatService.whoAmIContext(author.username);
 
       let userIdOriginalPoster: string = author.id;
 
@@ -212,27 +295,10 @@ export class AppService implements OnApplicationBootstrap {
       await this.redisService.rpush(userIdOriginalPoster, `Пепа: ${response}`);
 
       const messageSuccess = await this.channel.send(response);
-      await setTimeout(600_000);
-      await messageSuccess.delete();
 
       return { response, channelId };
     } catch (e) {
       console.error(e)
     }
-  }
-
-  @BullQueueEventsListener("completed")
-  public async completed(args: BullQueueEventsListenerArgs["completed"]): Promise<void> {
-    this.logger.log(`[${args.jobId}] completed`);
-  }
-
-  @BullQueueEventsListener("failed")
-  public async failed(args: BullQueueEventsListenerArgs["failed"]): Promise<void> {
-    this.logger.log(`[${args.jobId}] failed`);
-  }
-
-  @BullQueueEventsListener("progress")
-  public async progress(args: BullQueueEventsListenerArgs["progress"]): Promise<void> {
-    this.logger.log(`[${args.jobId}] progress`);
   }
 }

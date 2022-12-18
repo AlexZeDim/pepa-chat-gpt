@@ -1,3 +1,18 @@
 export enum OPENAI_MODEL_ENGINE {
   ChatGPT3 = 'text-davinci-003'
 }
+
+export enum PEPA_STORAGE_KEYS {
+  EMOJIS = 'pepaEmojis',
+  STICKERS = 'pepaStickers'
+}
+
+export enum PEPA_TRIGGER_FLAG {
+  EMOJI = 'EMOJI',
+  MESSAGE = 'MESSAGE',
+  LOOT_CLOWN_CHEST = 'LOOT_CLOWN_CHEST',
+  ANY_GOOD_LOOT = 'ANY_GOOD_LOOT',
+  TIME_TO_RAID_HONEY = 'YES_HONEY',
+  DEPLETE_MYTHIC_KEY = 'DEPLETE_MYTHIC_KEY',
+  ERROR = 'EMPTY'
+}

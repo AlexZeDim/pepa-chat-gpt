@@ -3,9 +3,12 @@ import { AppService } from './app.service';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { BullModule } from '@anchan828/nest-bullmq';
 import { chatQueue } from '@app/shared';
+import { ChatService } from './chat/chat.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     RedisModule.forRoot({
       config: {
         host: process.env.REDIS_HOST,
@@ -25,6 +28,6 @@ import { chatQueue } from '@app/shared';
     BullModule.registerQueue({ queueName: chatQueue.name, options: chatQueue.options }),
   ],
   controllers: [],
-  providers: [AppService],
+  providers: [AppService, ChatService],
 })
 export class AppModule {}
