@@ -83,7 +83,7 @@ export class ChatService {
             console.log(index);
             const raid = value.at(index);
             console.log(raid);
-            const action = corpus.raiding.get(index + 10).random();
+            const action = corpus.raiding.get(index + 9).random();
 
             return `${raid} ${action}`;
           }
