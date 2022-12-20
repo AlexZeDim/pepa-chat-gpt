@@ -10,12 +10,14 @@ import { Interval } from '@nestjs/schedule';
 import { ChatService } from './chat/chat.service';
 
 import {
-  chatQueue,
+  chatQueue, corpus,
   MessageJobInterface,
   MessageJobResInterface,
-  OPENAI_MODEL_ENGINE,
+  OPENAI_MODEL_ENGINE, PEPA_CHAT_KEYS,
   PEPA_STORAGE_KEYS,
   PEPA_TRIGGER_FLAG,
+  randInBetweenFloat,
+  randInBetweenInt,
 } from '@app/shared';
 
 import {
@@ -24,6 +26,7 @@ import {
   BullWorkerProcess,
 } from '@anchan828/nest-bullmq';
 import * as console from 'console';
+import { ChatEngine } from './chat/chat.engine';
 
 
 @Injectable()
@@ -32,7 +35,8 @@ export class AppService implements OnApplicationBootstrap {
   private readonly logger = new Logger(AppService.name, { timestamp: true });
   private client: Client;
   private channel: TextChannel;
-  private chatConfiguration: Configuration;
+  private chatConfiguration: [Configuration, Configuration];
+  private chatEngineStorage: [OpenAIApi, OpenAIApi];
   private chatEngine: OpenAIApi;
   private storageEmojisLength: number;
   constructor(
@@ -105,6 +109,18 @@ export class AppService implements OnApplicationBootstrap {
     this.chatService.initDayJs();
 
     await this.client.login(process.env.DISCORD_TOKEN);
+
+    this.chatConfiguration = [
+      new Configuration({ apiKey: process.env.OPENAI_API_KEY_1 }),
+      new Configuration({ apiKey: process.env.OPENAI_API_KEY_2 })
+    ];
+
+    const [ config1, config2 ] = this.chatConfiguration;
+
+    this.chatEngineStorage = [
+      new OpenAIApi(config1),
+      new OpenAIApi(config2),
+    ];
   }
 
   private async storage() {
@@ -133,17 +149,24 @@ export class AppService implements OnApplicationBootstrap {
      */
     this.client.on(Events.MessageCreate, async (message) => {
       try {
-        if (message.author.id === this.client.user.id || message.author.bot) return;
+        const ignoreMe = (!!await this.redisService.exists(PEPA_CHAT_KEYS.FULL_TILT_IGNORE));
+
+        if (message.author.id === this.client.user.id || message.author.bot || ignoreMe) return;
 
         let content = message.content;
+        let isMentioned: boolean;
 
         const regex = new RegExp('^пеп');
-        // TODO check before was isMentioned active for some time for dialog via redis
-        const isMentioned = content.split(' ').filter(Boolean).some(s => regex.test(s.toLowerCase()));
 
-        console.log(!!content, !!message.attachments.size, isMentioned);
+        const wasMentioned = (!!await this.redisService.exists(PEPA_CHAT_KEYS.MENTIONED));
+        if (wasMentioned) {
+          isMentioned = true;
+        } else {
+          isMentioned = content.split(' ').filter(Boolean).some(s => regex.test(s.toLowerCase()));
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
+        }
+
         const { flag } = await this.chatService.diceRollerFullHouse(!!content, !!message.attachments.size, isMentioned);
-        console.log(flag);
 
         if (flag === PEPA_TRIGGER_FLAG.EMOJI) {
           await this.chatService.chatPepeReaction(this.client, message, 0, this.storageEmojisLength);
@@ -152,12 +175,11 @@ export class AppService implements OnApplicationBootstrap {
         if (flag === PEPA_TRIGGER_FLAG.MESSAGE) {
           await message.channel.sendTyping();
           this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
 
           const { id, author, channelId, reference } = message;
 
-          const token = process.env.OPENAI_API_KEY_2
-
-          await this.queue.add(message.id, { id, author, channelId, token, content, reference });
+          await this.queue.add(message.id, { id, author, channelId, content, reference });
         }
       } catch (e) {
         console.error(e);
@@ -171,11 +193,13 @@ export class AppService implements OnApplicationBootstrap {
       // TODO happy raiding!
 
       // TODO add inactive
-      this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
-
-      const { flag, context } = await this.chatService.diceRollerFullHouse(false, false, false, true);
+      const { flag, context } = await this.chatService.diceRollerFullHouse(false, false, false);
       // TODO react!
-      await this.channel.send(context);
+      if (context) {
+        this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
+        await this.channel.send(context);
+      }
+
     } catch (e) {
       console.error(e)
     }
@@ -186,11 +210,11 @@ export class AppService implements OnApplicationBootstrap {
     try {
       this.logger.log(`Job ${job.id} has been started!`);
 
-      const { id, author, channelId, token, content, reference } = { ...job.data };
+      const { id, author, channelId, content, reference } = { ...job.data };
 
       let dialogContext = this.chatService.whoAmIContext(author.username);
 
-      let userIdOriginalPoster: string = author.id;
+      let userName: string = author.username;
 
       if (reference) {
         /**
@@ -200,15 +224,7 @@ export class AppService implements OnApplicationBootstrap {
         const originalRefMessageId = await this.redisService.get(reference.messageId);
         if (!originalRefMessageId) {
           this.logger.warn(`We have found a reference link, but seems no reference dialog. Ok, SKIP...`);
-          return; // TODO MVF GOTO
-        }
-
-        this.logger.debug(`RefM: ${reference.messageId} => OriginalM: ${originalRefMessageId}`);
-
-        const originalPosterUserId = await this.redisService.get(originalRefMessageId);
-        this.logger.debug(`OriginalM: ${originalRefMessageId} => OriginalU ${originalPosterUserId}`);
-        if (originalPosterUserId) {
-          userIdOriginalPoster = originalPosterUserId;
+          // TODO add ref to context
         }
       }
 
@@ -217,26 +233,21 @@ export class AppService implements OnApplicationBootstrap {
        * @description If not flag, consider dialog started
        * @description anyway, refresh TTL start key
        */
-      const messageContextNumber = await this.redisService.llen(userIdOriginalPoster);
-      this.logger.log(`Dialog context with user: ${userIdOriginalPoster} has ${messageContextNumber} messages`);
+      const messageContextNumber = await this.redisService.llen(userName);
+      this.logger.log(`Dialog context with user: ${userName} has ${messageContextNumber} messages`);
 
-      await this.redisService.set(id, userIdOriginalPoster, 'EX', 900);
+      await this.redisService.set(id, userName, 'EX', 900);
 
       if (messageContextNumber) {
-        if (messageContextNumber > 3) {
-          await this.redisService.lpop(userIdOriginalPoster);
+        if (messageContextNumber > 4) {
+          await this.redisService.lpop(userName);
         }
-        dialogContext = await this.redisService.lrange(userIdOriginalPoster, 0, 4);
+
+        const storedContext = await this.redisService.lrange(userName, 0, 4);
+        dialogContext = [...storedContext];
       }
 
-      let userPrettyText = content.replace(/\n/g, ' ').replace(/\\n/g, ' ');
-      if (!userPrettyText.endsWith(".") || userPrettyText.endsWith("?") || userPrettyText.endsWith("!")) {
-        userPrettyText = `${userPrettyText}.`
-      }
-
-      dialogContext.push(`${userIdOriginalPoster}: ${userPrettyText}`);
-
-      console.log(dialogContext);
+      dialogContext.push(`${userName}: ${this.chatService.prepareChatText(content)}`);
 
       this.channel = await this.client.channels.cache.get(channelId) as TextChannel;
       if (!this.channel) this.channel = await this.client.channels.fetch(channelId) as TextChannel;
@@ -244,54 +255,58 @@ export class AppService implements OnApplicationBootstrap {
       let chatResponses;
 
       try {
-        this.chatConfiguration = new Configuration({ apiKey: token });
+        const engineIndex = randInBetweenInt(0, 1);
 
-        this.chatEngine = new OpenAIApi(this.chatConfiguration);
+        this.chatEngine = this.chatEngineStorage[engineIndex];
+        console.log(engineIndex, dialogContext);
 
         const { data } = await this.chatEngine.createCompletion({
           model: OPENAI_MODEL_ENGINE.ChatGPT3,
           prompt: dialogContext,
-          temperature: 0.5, // 0.9
+          temperature: randInBetweenFloat(0.5, 0.9, 1),
           max_tokens: 1999,
-          top_p: 0.3, // 0.3 and more sarcastic
-          frequency_penalty: 0.5, // 0.0
-          presence_penalty: 0.0, // 0.6
+          top_p: randInBetweenFloat(0.3, 0.5, 1), // 0.3 and more sarcastic
+          frequency_penalty: randInBetweenFloat(0.3, 0.6, 1), // 0.0
+          presence_penalty: randInBetweenFloat(0.0, 0.6, 1),
           best_of: 2,
-          user: userIdOriginalPoster,
-          stop: [`${userIdOriginalPoster}:`],
+          user: author.id,
+          stop: [`${userName}:`],
         });
 
         chatResponses = data;
       } catch (chatEngineError) {
+
         this.logger.error(`${chatEngineError.response.status} : ${chatEngineError.response.statusText}`);
-        const discordErrorMessage = await this.channel.send(`Ты оставил меня без слов!`);
-        await setTimeout(15_000);
-        await discordErrorMessage.delete();
-        return { response: '', channelId };
+
+        const backoffReply = corpus.backoff.random();
+
+        await this.channel.send(backoffReply);
+        await this.redisService.set(
+          PEPA_CHAT_KEYS.FULL_TILT_IGNORE, 1, 'EX', randInBetweenInt(30, 600)
+        );
+
+        return { response: backoffReply, channelId };
       }
 
-      this.logger.log(`Request for ${userIdOriginalPoster} has been sent & received`);
       if (!chatResponses || !chatResponses.choices || !chatResponses.choices.length) {
-        const discordErrorMessage = await this.channel.send(`Ты оставил меня без слов!`);
-        await setTimeout(15_000);
-        await discordErrorMessage.delete();
+        const mediaReply = corpus.media.random();
+
+        await this.channel.send(mediaReply);
       }
       // TODO pretty format
       let response: string;
       const responseChoice = chatResponses.choices.reduce((prev, current) => (prev.index > current.index) ? prev : current);
-      const formatString = responseChoice.text.split(/:/);
+      const formatString = responseChoice.text.split(/а:/);
 
       formatString.length === 1 ? response = formatString[0] : response = formatString[1];
 
-      response
-        .replace(/\n/g, '')
-        .replace(/\\n/g, '');
+      response = this.chatService.prepareChatText(response);
 
-      console.log(response);
+      await this.redisService.rpush(userName, `Пепа: ${response}`);
 
-      await this.redisService.rpush(userIdOriginalPoster, `Пепа: ${response}`);
-
-      const messageSuccess = await this.channel.send(response);
+      if (response) {
+        await this.channel.send(response);
+      }
 
       return { response, channelId };
     } catch (e) {

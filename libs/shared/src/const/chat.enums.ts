@@ -7,6 +7,11 @@ export enum PEPA_STORAGE_KEYS {
   STICKERS = 'pepaStickers'
 }
 
+export enum PEPA_CHAT_KEYS {
+  MENTIONED = 'IS_MENTIONED',
+  FULL_TILT_IGNORE = 'FULL_TILT_IGNORE',
+}
+
 export enum PEPA_TRIGGER_FLAG {
   TEST = 'TEST',
   EMOJI = 'EMOJI',

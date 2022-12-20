@@ -85,14 +85,17 @@ export class ChatService {
          */
         if (localTime.weekday() === 1) {
           const [startJoinQueueMythicKey, endLeavePugsDepleteKey] = [
-            localTime.hour(23).minute(0),
+            localTime.hour(21).minute(0),
             localTime.hour(23).minute(59),
           ];
 
           const timeToDepleteKey = localTime.isBetween(startJoinQueueMythicKey, endLeavePugsDepleteKey);
           const isTimeToDepleteKey = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY);
           if (timeToDepleteKey && isTimeToDepleteKey) {
-            await this.redisService.set(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY, 1 , 'EX', 1000 * 60 * 60 * 2);
+            await this.redisService.set(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY, 1 , 'EX', 1000 * 60 * 60 * 6);
+
+
+
             return { flag: PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY };
           }
         }
@@ -161,7 +164,7 @@ export class ChatService {
         }
       }
 
-      if (!isText && hasAttachment && triggerChance > 0.50) {
+      if (!isText && hasAttachment && triggerChance > 0.70) {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
@@ -169,10 +172,9 @@ export class ChatService {
         return { flag: PEPA_TRIGGER_FLAG.MESSAGE };
       }
 
-      if (isText && triggerChance >= 0.88) {
+      if (isText && triggerChance >= 0.94) {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
-
 
       return { flag: PEPA_TRIGGER_FLAG.ERROR };
     } catch (e) {
@@ -181,7 +183,22 @@ export class ChatService {
     }
   }
 
-  whoAmIContext (authorName: string): string[] {
-    return [`${authorName}: Hiya, who are you?', 'Пепа: Hi! I am пепа. I play World of Warcraft on monk class. I like to push mythic plus, raid with friends and loot gear from weekly chest!`];
+  public whoAmIContext (authorName: string): string[] {
+    return [
+      `${authorName}: You are Пепа`,
+      `Пепа: I am пепа.`,
+      `${authorName}: You like to play World of Warcraft for monk class.`,
+      `Пепа: I like to play World of Warcraft for monk class.`,
+      // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests`,
+      // `Пепа: I like to push mythic plus, raid with friends and loot gear from weekly chest!`,
+    ];
+  }
+
+  public prepareChatText = (context: string): string => {
+    let userPrettyText = context.replace(/\n/g, ' ').replace(/\\n/g, ' ');
+    if (!userPrettyText.endsWith(".") || !userPrettyText.endsWith("?") || !userPrettyText.endsWith("!")) {
+      userPrettyText = `${userPrettyText}.`
+    }
+    return userPrettyText;
   }
 }

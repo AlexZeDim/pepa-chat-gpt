@@ -88,14 +88,12 @@ export const corpus = {
     ])],
   ]),
 
-  media: new Collection<number, Collection<number, string>>([
-    [1, new Collection([
-      [1, 'https://media.discordapp.net/attachments/878612342529749005/948200639920476200/3x.gif'],
-      [2, 'https://cdn.discordapp.com/attachments/803140156336898068/950467930947219476/1kTjqCU.mp4'],
-      [3, 'https://tenor.com/view/olyashaa-olyashaasaxon-%D0%BE%D0%BB%D1%8F%D1%88%D0%B0-%D1%87%D1%82%D0%BE-what-gif-20406193'],
-      [4, 'https://tenor.com/view/%D1%81%D0%B2%D0%B8%D0%BD%D1%8F%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D1%81%D0%B2%D0%B8%D0%BD%D1%8F-%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D0%B2%D0%BE%D0%B4%D0%B0-%D1%81%D0%BC%D0%B0%D1%87%D0%BD%D0%BE%D0%B3%D0%BE-gif-26990311'],
-      [5, 'https://imgur.com/LHZGEqD']
-    ])]
+  media: new Collection<number, string>([
+    [1, 'https://media.discordapp.net/attachments/878612342529749005/948200639920476200/3x.gif'],
+    [2, 'https://cdn.discordapp.com/attachments/803140156336898068/950467930947219476/1kTjqCU.mp4'],
+    [3, 'https://tenor.com/view/olyashaa-olyashaasaxon-%D0%BE%D0%BB%D1%8F%D1%88%D0%B0-%D1%87%D1%82%D0%BE-what-gif-20406193'],
+    [4, 'https://tenor.com/view/%D1%81%D0%B2%D0%B8%D0%BD%D1%8F%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D1%81%D0%B2%D0%B8%D0%BD%D1%8F-%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D0%B2%D0%BE%D0%B4%D0%B0-%D1%81%D0%BC%D0%B0%D1%87%D0%BD%D0%BE%D0%B3%D0%BE-gif-26990311'],
+    [5, 'https://imgur.com/LHZGEqD'],
   ]),
 
   chest: new Collection<number, Collection<number, string>>([
@@ -109,12 +107,10 @@ export const corpus = {
     [2, variation],
   ]),
 
-  call: new Collection<number, Collection<number, string>>([
-    [1, new Collection([
-      [1, 'добрику'],
-      [2, 'яддеру'],
-      [3, 'скифулу'],
-    ])],
+  call: new Collection<number, string>([
+    [1, 'добрику'],
+    [2, 'яддеру'],
+    [3, 'скифулу'],
   ]),
 
   loot: new Collection<number, Collection<number, string>>([
@@ -132,18 +128,19 @@ export const corpus = {
     ])],
   ]),
 
-  backoff: new Collection<number, Collection<number, string>>([
-    [1, new Collection([
-      [1, 'ой всё!'],
-      [2, 'ты оставил меня без слов'],
-      [3, 'инвайтят в кеич, потом поговорим'],
-      [4, 'френды зовут на буст, бб бро'],
-      [5, 'надо поесть, брб афк'],
-      [6, 'соре, мне надо гайд для нимса написать'],
-      [7, 'тут бис дропнулся над засимить'],
-      [8, 'сейчас напишу модеру и она тебя забанит'],
-      [9, 'я обиделся'],
-    ])],
+  backoff: new Collection<number, string>([
+    [1, 'ой всё!'],
+    [2, 'ты оставил меня без слов'],
+    [3, 'инвайтят в кеич, потом поговорим'],
+    [4, 'френды зовут на буст, бб бро'],
+    [4, 'у нас тут пуш намечается и совсем без таких клоунов как ты!'],
+    [5, 'надо поесть, брб афк'],
+    [6, 'соре, мне надо гайд для нимса написать'],
+    [7, 'тут бис дропнулся над засимить'],
+    [8, 'сейчас напишу модеру и она тебя забанит'],
+    [9, 'я обиделся'],
+    [10 , 'чот устал@пойду прилягу'],
+    [11 , 'мои мозги перегрелись'],
   ]),
 
   tier: ['хранилище', 'волты'],
