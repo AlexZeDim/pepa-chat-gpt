@@ -8,17 +8,19 @@ export const tags = new Collection([
   [1, 'клоуны'],
   [2, 'кловны'],
   [3, 'монки'],
-  [4, 'душнилы'],
-  [5, 'чумбы'],
-  [6, 'ребзя'],
-  [7, 'терпилы'],
+  [4, 'котики'],
+  [5, 'душнилы'],
+  [6, 'чумбы'],
+  [7, 'ребзя'],
+  [8, 'терпилы'],
 ]);
 
 export const wake = new Collection([
   [1, 'динь динь динь, время'],
   [2, 'динь динь динь'],
   [3, 'пора'],
-  [4, ''],
+  [4, 'так'],
+  [6, ''],
 ]);
 
 export const raid = new Collection([
@@ -69,15 +71,12 @@ export const corpus = {
   raiding: new Collection<number, Collection<number, string>>([
     [1, wake],
     [2, tags],
-    [3, new Collection([
-      [1, 'время'] ])
-    ],
     [4, raid],
     [10, traders],
     [11, new Collection([
       [1, 'своего рла'] ])
     ],
-    [12,  new Collection([
+    [12, new Collection([
       [1, 'перед боссами'],
       [2, 'перед рл-ом'],
       [3, 'с пугами'],
@@ -89,51 +88,71 @@ export const corpus = {
     ])],
   ]),
 
-  media: new Collection<number, string[]>([
-    [1, [
-      'https://media.discordapp.net/attachments/878612342529749005/948200639920476200/3x.gif',
-      'https://cdn.discordapp.com/attachments/803140156336898068/950467930947219476/1kTjqCU.mp4',
-      'https://tenor.com/view/olyashaa-olyashaasaxon-%D0%BE%D0%BB%D1%8F%D1%88%D0%B0-%D1%87%D1%82%D0%BE-what-gif-20406193',
-      'https://tenor.com/view/%D1%81%D0%B2%D0%B8%D0%BD%D1%8F%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D1%81%D0%B2%D0%B8%D0%BD%D1%8F-%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D0%B2%D0%BE%D0%B4%D0%B0-%D1%81%D0%BC%D0%B0%D1%87%D0%BD%D0%BE%D0%B3%D0%BE-gif-26990311',
-      'https://imgur.com/LHZGEqD',
-    ]]
+  media: new Collection<number, Collection<number, string>>([
+    [1, new Collection([
+      [1, 'https://media.discordapp.net/attachments/878612342529749005/948200639920476200/3x.gif'],
+      [2, 'https://cdn.discordapp.com/attachments/803140156336898068/950467930947219476/1kTjqCU.mp4'],
+      [3, 'https://tenor.com/view/olyashaa-olyashaasaxon-%D0%BE%D0%BB%D1%8F%D1%88%D0%B0-%D1%87%D1%82%D0%BE-what-gif-20406193'],
+      [4, 'https://tenor.com/view/%D1%81%D0%B2%D0%B8%D0%BD%D1%8F%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D1%81%D0%B2%D0%B8%D0%BD%D1%8F-%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D0%B2%D0%BE%D0%B4%D0%B0-%D1%81%D0%BC%D0%B0%D1%87%D0%BD%D0%BE%D0%B3%D0%BE-gif-26990311'],
+      [5, 'https://imgur.com/LHZGEqD']
+    ])]
   ]),
 
-  chest: new Collection<number, any>([
+  chest: new Collection<number, Collection<number, string>>([
     [1, intro],
     [2, tags],
     [3, chest],
   ]),
 
-  neutral:  new Collection<number, any>([
+  neutral: new Collection<number, Collection<number, string>>([
     [1, baseline],
     [2, variation],
   ]),
 
-  call:  new Collection<number, string[]>([
-    [1, ['добрику', 'яддеру', 'скифулу']],
+  call: new Collection<number, Collection<number, string>>([
+    [1, new Collection([
+      [1, 'добрику'],
+      [2, 'яддеру'],
+      [3, 'скифулу'],
+    ])],
   ]),
 
-  loot:  new Collection<number, string[]>([
-    [1, ['анлаки бро', '... рот этого казино', 'посимить там себя не забудь', 'понятно все с тобой']],
-    [2, ['бис', 'норм сыплет', 'не ну это заявочка на оранжевые логи', 'го посимим', 'го покрутим']],
+  loot: new Collection<number, Collection<number, string>>([
+    [1, new Collection([
+      [1, 'анлаки бро'],
+      [2, '... рот этого казино'],
+      [3, 'посимить там себя не забудь'],
+      [4, 'понятно все с тобой'],
+    ])],
+    [2, new Collection([
+      [1, 'бис'],
+      [2, 'норм сыплет'],
+      [3, 'го посимим'],
+      [4, 'время крутить'],
+    ])],
   ]),
 
-  backoff:  new Collection<number, string[]>([
-    [1, [
-      'ой всё!',
-      'ты оставил меня без слов',
-      'пук пук пук',
-      'инвайтят в кеич, потом поговорим',
-      'френды зовут на буст, бб бро',
-      'надо поесть, брб афк',
-      'соре, мне надо гайд для нимса написать',
-      'тут бис дропнулся над засимить',
-      'сейчас напишу модеру и она тебя забанит',
-      'я обиделся'
-    ]],
+  backoff: new Collection<number, Collection<number, string>>([
+    [1, new Collection([
+      [1, 'ой всё!'],
+      [2, 'ты оставил меня без слов'],
+      [3, 'инвайтят в кеич, потом поговорим'],
+      [4, 'френды зовут на буст, бб бро'],
+      [5, 'надо поесть, брб афк'],
+      [6, 'соре, мне надо гайд для нимса написать'],
+      [7, 'тут бис дропнулся над засимить'],
+      [8, 'сейчас напишу модеру и она тебя забанит'],
+      [9, 'я обиделся'],
+    ])],
   ]),
 
   tier: ['хранилище', 'волты'],
-  keys: ['деплитать ваши', 'дебустить'],
+  keys: new Collection<number, Collection<number, string>>([
+    [1, new Collection([
+      [1, 'деплитать'],
+      [2, 'дебустить'],
+      [3, 'пушить'],
+      [4, 'ломать'],
+    ])],
+  ]),
 }
