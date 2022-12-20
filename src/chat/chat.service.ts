@@ -2,7 +2,7 @@ import { Client, Message } from 'discord.js';
 import Redis from 'ioredis';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable } from '@nestjs/common';
-import { PEPA_STORAGE_KEYS, PEPA_TRIGGER_FLAG, randInBetweenFloat, randInBetweenInt } from '@app/shared';
+
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import weekday from 'dayjs/plugin/weekday';
@@ -11,6 +11,16 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 import localeData from 'dayjs/plugin/localeData';
 import locale_ru from 'dayjs/locale/ru';
 import isBetween from 'dayjs/plugin/isBetween';
+
+import {
+  corpus,
+  DiceInterface,
+  PEPA_STORAGE_KEYS,
+  PEPA_TRIGGER_FLAG,
+  randInBetweenFloat,
+  randInBetweenInt,
+  weekdays,
+} from '@app/shared';
 
 @Injectable()
 export class ChatService {
@@ -31,11 +41,10 @@ export class ChatService {
 
     dayjs.locale(locale_ru);
 
-    dayjs.updateLocale('ru', {
-      weekdays: [
-        "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье",
-      ]
-    });
+    dayjs.updateLocale('ru', { weekdays });
+  }
+
+  async test() {
   }
 
   /**
@@ -44,7 +53,7 @@ export class ChatService {
    */
   async chatPepeReaction (client: Client, message: Message, min: number, max: number) {
     const anchorRandomElement = randInBetweenInt(min, max);
-    const rangeAnchorElement = randInBetweenInt(min, 5);
+    const rangeAnchorElement = randInBetweenInt(min, 4);
     const emojiPepeArrayId = await this.redisService.lrange(PEPA_STORAGE_KEYS.EMOJIS, (anchorRandomElement - rangeAnchorElement), anchorRandomElement);
     for (const emojiId of emojiPepeArrayId) {
       const emoji = await client.emojis.cache.get(emojiId);
@@ -52,98 +61,145 @@ export class ChatService {
     }
   }
 
+  /**
+   * @description Don't to understand@feel it
+   * @description This is vegas
+   */
   async diceRollerFullHouse (
     isText: boolean = false,
     hasAttachment: boolean = false,
     isMentioned: boolean = false,
-  ): Promise<PEPA_TRIGGER_FLAG> {
+    isTest: boolean = false,
+  ): Promise<DiceInterface> {
     try {
-      const dayjsLocal = dayjs();
+      const localTime = dayjs();
       const triggerChance = randInBetweenFloat(0, 1, 2);
+
+      if (isTest) {
+        const context = corpus.raiding.map((value, key) => {
+          if (key === 4) {
+            console.log(value, key);
+            const index = randInBetweenInt(1 , value.size);
+            console.log(index);
+            const raid = value.at(index);
+            console.log(raid);
+            const action = corpus.raiding.get(index + 10).random();
+
+            return `${raid} ${action}`;
+          }
+
+          if (key > 4) {
+            return '';
+          }
+
+          return value.random();
+        }).join(' ');
+
+        console.log(context)
+
+        return { flag: PEPA_TRIGGER_FLAG.TEST, context: `Привет, я Пепа` };
+      }
 
       if (!isText && !hasAttachment && !isMentioned) {
         /**
          * @description DID YOU FORGET TO DEPLETE YOUR KEY?
          */
-        if (dayjsLocal.weekday() === 1) {
+        if (localTime.weekday() === 1) {
           const [startJoinQueueMythicKey, endLeavePugsDepleteKey] = [
-            dayjs().hour(23).minute(0),
-            dayjs().hour(23).minute(59),
+            localTime.hour(23).minute(0),
+            localTime.hour(23).minute(59),
           ];
 
-          const timeToDepleteKey = dayjsLocal.isBetween(startJoinQueueMythicKey, endLeavePugsDepleteKey);
+          const timeToDepleteKey = localTime.isBetween(startJoinQueueMythicKey, endLeavePugsDepleteKey);
           const isTimeToDepleteKey = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY);
           if (timeToDepleteKey && isTimeToDepleteKey) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY, 1 , 'EX', 1000 * 60 * 60 * 2);
-            return PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY;
+            return { flag: PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY };
           }
         }
         /**
          * @description If Wednesday check once only!
          * @description GREAT LETTER DAY
          */
-        if (dayjsLocal.weekday() === 2) {
+        if (localTime.weekday() === 2) {
           const [
             startLootClownChest, endLootClownChest,
             startAnyGoodLoot, endAnyGoodLoot
           ] = [
-            dayjs().hour(10).minute(0),
-            dayjs().hour(10).minute(20),
-            dayjs().hour(11).minute(0),
-            dayjs().hour(11).minute(20),
+            localTime.hour(10).minute(0),
+            localTime.hour(10).minute(20),
+            localTime.hour(11).minute(0),
+            localTime.hour(11).minute(20),
           ];
 
-          const timeToLoot = dayjsLocal.isBetween(startLootClownChest, endLootClownChest);
+          const timeToLoot = localTime.isBetween(startLootClownChest, endLootClownChest);
           const isTimeToLootTriggered = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST);
           if (timeToLoot && isTimeToLootTriggered) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST, 1 , 'EX', 1000 * 60 * 60 * 2);
-            return PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST;
+            return { flag: PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST };
           }
 
-          const anyGoodLoot = dayjsLocal.isBetween(startAnyGoodLoot, endAnyGoodLoot);
+          const anyGoodLoot = localTime.isBetween(startAnyGoodLoot, endAnyGoodLoot);
           const isTimeAnyGoodLootTriggered = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT);
           if (anyGoodLoot && isTimeAnyGoodLootTriggered) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT, 1 , 'EX', 1000 * 60 * 60 * 2);
-            return PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT;
+            return { flag: PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT };
           }
         }
         /**
          * @description Every Mon Tue Wed Thur
          * @description TIME TO RAID BABE @ YES HONEY!
          */
-        if (dayjsLocal.weekday() === 0 || dayjsLocal.weekday() === 1 || dayjsLocal.weekday() === 3 || dayjsLocal.weekday() === 2) {
+        if (localTime.weekday() < 4) {
           const [startRaidHoney, endRaidHoney] = [
-            dayjs().hour(20).minute(0),
-            dayjs().hour(23).minute(59),
+            localTime.hour(20).minute(0),
+            localTime.hour(23).minute(59),
           ];
 
-          const raidTimeHoney = dayjsLocal.isBetween(startRaidHoney, endRaidHoney);
+          const raidTimeHoney = localTime.isBetween(startRaidHoney, endRaidHoney);
           const isTimeToRaidHoney = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY);
           if (raidTimeHoney && isTimeToRaidHoney) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, 1 , 'EX', 1000 * 60 * 60 * 4);
-            return PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY;
+
+            const context = corpus.raiding.map((value, key) => {
+              if (key === 4) {
+                const index = randInBetweenInt(0 , value.size);
+
+                const raid = value.at(index);
+
+                const action = corpus.raiding.at(index + 10).random();
+
+                return `${raid} ${action}`;
+              }
+              return value.random();
+            }).join(' ');
+
+            return { flag: PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, context };
           }
         }
       }
 
       if (!isText && hasAttachment && triggerChance > 0.50) {
-        return PEPA_TRIGGER_FLAG.EMOJI;
+        return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
       if ((isText && triggerChance <= 0.12) || isMentioned) {
-        return PEPA_TRIGGER_FLAG.MESSAGE;
+        return { flag: PEPA_TRIGGER_FLAG.MESSAGE };
       }
 
       if (isText && triggerChance >= 0.88) {
-        return PEPA_TRIGGER_FLAG.EMOJI;
+        return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
+
+
+      return { flag: PEPA_TRIGGER_FLAG.ERROR };
     } catch (e) {
       console.log(e);
-      return PEPA_TRIGGER_FLAG.ERROR;
+      return{ flag: PEPA_TRIGGER_FLAG.ERROR };
     }
   }
 
   whoAmIContext (authorName: string): string[] {
-    return [`${authorName}: Привет, кто ты?', 'Пепа: Привет! Я - Пепа. Я люблю играть в World of Warcraft за монаха. Ходить в ключи и лутать шмотки.`];
+    return [`${authorName}: Hiya, who are you?', 'Пепа: Hi! I am пепа. I play World of Warcraft on monk class. I like to push mythic plus, raid with friends and loot gear from weekly chest!`];
   }
 }

@@ -23,6 +23,7 @@ import {
   BullWorker,
   BullWorkerProcess,
 } from '@anchan828/nest-bullmq';
+import * as console from 'console';
 
 
 @Injectable()
@@ -65,7 +66,7 @@ export class AppService implements OnApplicationBootstrap {
 
 
   private async test() {
-
+    // await this.chatService.test();
 
     // TODO
     // const dayjsLocal = dayjs();
@@ -140,13 +141,15 @@ export class AppService implements OnApplicationBootstrap {
         // TODO check before was isMentioned active for some time for dialog via redis
         const isMentioned = content.split(' ').filter(Boolean).some(s => regex.test(s.toLowerCase()));
 
-        const triggerFlag = await this.chatService.diceRollerFullHouse(!!content, !!message.attachments.size, isMentioned);
+        console.log(!!content, !!message.attachments.size, isMentioned);
+        const { flag } = await this.chatService.diceRollerFullHouse(!!content, !!message.attachments.size, isMentioned);
+        console.log(flag);
 
-        if (triggerFlag === PEPA_TRIGGER_FLAG.EMOJI) {
+        if (flag === PEPA_TRIGGER_FLAG.EMOJI) {
           await this.chatService.chatPepeReaction(this.client, message, 0, this.storageEmojisLength);
         }
 
-        if (triggerFlag === PEPA_TRIGGER_FLAG.MESSAGE) {
+        if (flag === PEPA_TRIGGER_FLAG.MESSAGE) {
           await message.channel.sendTyping();
           this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
 
@@ -162,23 +165,17 @@ export class AppService implements OnApplicationBootstrap {
     });
   }
 
-  @Interval(300_000)
+  @Interval(60_000)
   async idleReaction() {
     try {
-      const flag = await this.chatService.diceRollerFullHouse(false, false, false);
-      switch (flag) {
-        case PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST:
-          console.log('Oranges are $0.59 a pound.');
-          break;
-        case PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT:
-        case PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY:
-        case PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY:
-          console.log('Mangoes and papayas are $2.79 a pound.');
-          // expected output: "Mangoes and papayas are $2.79 a pound."
-          break;
-        default:
-          console.log(`Sorry, we are out of.`);
-      }
+      // TODO happy raiding!
+
+      // TODO add inactive
+      this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
+
+      const { flag, context } = await this.chatService.diceRollerFullHouse(false, false, false, true);
+      // TODO react!
+      await this.channel.send(context);
     } catch (e) {
       console.error(e)
     }
