@@ -76,27 +76,6 @@ export class ChatService {
       const triggerChance = randInBetweenFloat(0, 1, 2);
 
       if (isTest) {
-        const context = corpus.raiding.map((value, key) => {
-          if (key === 4) {
-            console.log(value, key);
-            const index = randInBetweenInt(1 , value.size);
-            console.log(index);
-            const raid = value.at(index);
-            console.log(raid);
-            const action = corpus.raiding.get(index + 9).random();
-
-            return `${raid} ${action}`;
-          }
-
-          if (key > 4) {
-            return '';
-          }
-
-          return value.random();
-        }).join(' ');
-
-        console.log(context)
-
         return { flag: PEPA_TRIGGER_FLAG.TEST, context: `Привет, я Пепа` };
       }
 
@@ -161,20 +140,23 @@ export class ChatService {
           if (raidTimeHoney && isTimeToRaidHoney) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, 1 , 'EX', 1000 * 60 * 60 * 4);
 
-            const context = corpus.raiding.map((value, key) => {
-              if (key === 4) {
-                const index = randInBetweenInt(0 , value.size);
+            const context = [];
 
-                const raid = value.at(index);
+            for (const [index, phrase] of corpus.raiding.entries()) {
+              if (index === 4) {
+                const elIndex = randInBetweenInt(1 , phrase.size);
+                const raid = phrase.at(elIndex);
+                const action = corpus.raiding.get(elIndex + 9).random();
 
-                const action = corpus.raiding.at(index + 10).random();
-
-                return `${raid} ${action}`;
+                context.push(`${raid} ${action}`);
               }
-              return value.random();
-            }).join(' ');
 
-            return { flag: PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, context };
+              if (index > 4) break;
+
+              context.push(phrase.random());
+            }
+
+            return { flag: PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, context: context.join(' ') };
           }
         }
       }
