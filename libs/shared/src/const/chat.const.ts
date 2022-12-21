@@ -20,7 +20,6 @@ export const wake = new Collection([
   [2, 'динь динь динь'],
   [3, 'пора'],
   [4, 'так'],
-  [6, ''],
 ]);
 
 export const raid = new Collection([
