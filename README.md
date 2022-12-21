@@ -31,5 +31,5 @@ OPENAI_API_KEY_1=
 OPENAI_API_KEY_2=
 DISCORD_TOKEN=
 ```
-3. Install all dependencies `bashnpm install` or `yarn`.
+3. Install all dependencies `npm install` or `yarn`.
 4. Build & run via `nest start`
