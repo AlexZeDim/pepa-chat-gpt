@@ -342,6 +342,14 @@ export class AppService implements OnApplicationBootstrap {
 
       const response = this.chatService.prepareChatText(formatString);
 
+      if (response === '.') {
+        const mediaReply = corpus.media.random();
+
+        await this.channel.send(mediaReply);
+
+        return { response: mediaReply, channelId };
+      }
+
       /**
        * @description Stop self-learning
        * await this.redisService.rpush(channelId, `Пепа: ${response}`);
