@@ -44,9 +44,6 @@ export class ChatService {
     dayjs.updateLocale('ru', { weekdays });
   }
 
-  async test() {
-  }
-
   /**
    * @description Use random react with emojis between 1 and 5 reactions
    * @description for maximum user behavior
@@ -91,11 +88,9 @@ export class ChatService {
 
           const timeToDepleteKey = localTime.isBetween(startJoinQueueMythicKey, endLeavePugsDepleteKey);
           const isTimeToDepleteKey = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY);
-          if (timeToDepleteKey && isTimeToDepleteKey) {
+          if (timeToDepleteKey && !isTimeToDepleteKey) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY, 1 , 'EX', 1000 * 60 * 60 * 6);
-
-
-
+            // TODO add interaction
             return { flag: PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY };
           }
         }
@@ -111,21 +106,24 @@ export class ChatService {
             localTime.hour(10).minute(0),
             localTime.hour(10).minute(20),
             localTime.hour(11).minute(0),
-            localTime.hour(11).minute(20),
+            localTime.hour(11).minute(59),
           ];
 
           const timeToLoot = localTime.isBetween(startLootClownChest, endLootClownChest);
           const isTimeToLootTriggered = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST);
           if (timeToLoot && isTimeToLootTriggered) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST, 1 , 'EX', 1000 * 60 * 60 * 2);
-            return { flag: PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST };
+            const context = corpus.chest.map(phrase => phrase.random()).join(' ');
+            return { flag: PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST, context };
           }
 
           const anyGoodLoot = localTime.isBetween(startAnyGoodLoot, endAnyGoodLoot);
           const isTimeAnyGoodLootTriggered = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT);
-          if (anyGoodLoot && isTimeAnyGoodLootTriggered) {
+          if (anyGoodLoot && !isTimeAnyGoodLootTriggered) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT, 1 , 'EX', 1000 * 60 * 60 * 2);
-            return { flag: PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT };
+            const loot = corpus.loot.random();
+            const context = loot.random();
+            return { flag: PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT, context };
           }
         }
         /**
@@ -141,6 +139,11 @@ export class ChatService {
           const raidTimeHoney = localTime.isBetween(startRaidHoney, endRaidHoney);
           const isTimeToRaidHoney = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY);
           if (raidTimeHoney && isTimeToRaidHoney) {
+            const isRaidTriggerHappy = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY);
+            if (!isRaidTriggerHappy) return { flag: PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY };
+          }
+
+          if (raidTimeHoney && !isTimeToRaidHoney) {
             await this.redisService.set(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, 1 , 'EX', 1000 * 60 * 60 * 4);
 
             const context = [];
@@ -176,20 +179,31 @@ export class ChatService {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
-      return { flag: PEPA_TRIGGER_FLAG.ERROR };
+      return { flag: PEPA_TRIGGER_FLAG.EMPTY };
     } catch (e) {
       console.log(e);
-      return{ flag: PEPA_TRIGGER_FLAG.ERROR };
+      return{ flag: PEPA_TRIGGER_FLAG.EMPTY };
     }
   }
 
   public whoAmIContext (authorName: string): string[] {
     return [
-      `${authorName}: You are Пепа`,
-      `Пепа: I am пепа.`,
-      `${authorName}: You like to play World of Warcraft for monk class.`,
-      `Пепа: I like to play World of Warcraft for monk class.`,
-      // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests`,
+      `${authorName}: Тебя зовут Пепа.`,
+      `Пепа: Меня зовут Пепа.`,
+      // `${authorName}: You like to play World of Warcraft for monk class.`,
+      // `Пепа: I like to play World of Warcraft for monk class.`,
+      // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests.`,
+      // `Пепа: I like to push mythic plus, raid with friends and loot gear from weekly chest!`,
+    ];
+  }
+
+  public didYouKnowThat (authorName: string): string[] {
+    return [
+      `${authorName}: Тебя зовут Пепа.`,
+      `Пепа: Меня зовут Пепа.`,
+      // `${authorName}: You like to play World of Warcraft for monk class.`,
+      // `Пепа: I like to play World of Warcraft for monk class.`,
+      // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests.`,
       // `Пепа: I like to push mythic plus, raid with friends and loot gear from weekly chest!`,
     ];
   }

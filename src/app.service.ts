@@ -5,28 +5,24 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Client, Events, Partials, TextChannel } from 'discord.js';
 import { Job, Queue } from 'bullmq';
 import { Configuration, OpenAIApi } from 'openai';
-import { setTimeout } from 'node:timers/promises';
 import { Interval } from '@nestjs/schedule';
 import { ChatService } from './chat/chat.service';
 
 import {
-  chatQueue, corpus,
+  chatQueue,
+  corpus,
   MessageJobInterface,
   MessageJobResInterface,
-  OPENAI_MODEL_ENGINE, PEPA_CHAT_KEYS,
+  OPENAI_MODEL_ENGINE,
+  PEPA_CHAT_KEYS,
   PEPA_STORAGE_KEYS,
   PEPA_TRIGGER_FLAG,
   randInBetweenFloat,
   randInBetweenInt,
 } from '@app/shared';
 
-import {
-  BullQueueInject,
-  BullWorker,
-  BullWorkerProcess,
-} from '@anchan828/nest-bullmq';
+import { BullQueueInject, BullWorker, BullWorkerProcess } from '@anchan828/nest-bullmq';
 import * as console from 'console';
-import { ChatEngine } from './chat/chat.engine';
 
 
 @Injectable()
@@ -61,7 +57,7 @@ export class AppService implements OnApplicationBootstrap {
       },
     });
 
-    await this.loadBot(true);
+    await this.loadBot();
 
     await this.bot();
 
@@ -126,6 +122,8 @@ export class AppService implements OnApplicationBootstrap {
   private async storage() {
     const guild = await this.client.guilds.fetch('217529277489479681');
 
+    await this.redisService.del(PEPA_STORAGE_KEYS.EMOJIS);
+
     for (const emoji of guild.emojis.cache.values()) {
       if (emoji.name.toLowerCase().includes('pep')) {
         await this.redisService.rpush(PEPA_STORAGE_KEYS.EMOJIS, emoji.id);
@@ -150,13 +148,38 @@ export class AppService implements OnApplicationBootstrap {
     this.client.on(Events.MessageCreate, async (message) => {
       try {
         const ignoreMe = (!!await this.redisService.exists(PEPA_CHAT_KEYS.FULL_TILT_IGNORE));
+        if (ignoreMe) {
+          const ttl = await this.redisService.ttl(PEPA_CHAT_KEYS.FULL_TILT_IGNORE);
+          this.logger.debug(`Pepa will ignore everything for ${ttl} more seconds`);
+        }
 
-        if (message.author.id === this.client.user.id || message.author.bot || ignoreMe) return;
+        if (message.author.id === this.client.user.id || message.author.bot) return;
 
-        let content = message.content;
+        if (message.channelId === '217532087001939969') {
+          const lastMessageTimestamp = new Date().getTime();
+          await this.redisService.set(PEPA_CHAT_KEYS.LAST_MESSAGE_AT, lastMessageTimestamp);
+          this.logger.debug(`Last message timestamp updated for ${lastMessageTimestamp}`);
+        }
+
+        const { id, author, channelId, reference } = message;
+
+        let { content } = message;
         let isMentioned: boolean;
 
+        if (content) {
+          await this.redisService.rpush(channelId, `${author.username}: ${content}`);
+          const channelContextLength = await this.redisService.llen(channelId);
+          if (channelContextLength > 25) await this.redisService.lpop(channelId);
+        }
+
+        if (ignoreMe) return;
+
         const regex = new RegExp('^пеп');
+
+        if (message.mentions && message.mentions.users.size) {
+          isMentioned = message.mentions.users.has(this.client.user.id);
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
+        }
 
         const wasMentioned = (!!await this.redisService.exists(PEPA_CHAT_KEYS.MENTIONED));
         if (wasMentioned) {
@@ -177,8 +200,6 @@ export class AppService implements OnApplicationBootstrap {
           this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
           await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
 
-          const { id, author, channelId, reference } = message;
-
           await this.queue.add(message.id, { id, author, channelId, content, reference });
         }
       } catch (e) {
@@ -190,18 +211,42 @@ export class AppService implements OnApplicationBootstrap {
   @Interval(60_000)
   async idleReaction() {
     try {
-      // TODO happy raiding!
+      const now = new Date().getTime();
+      const from = await this.redisService.get(PEPA_CHAT_KEYS.LAST_MESSAGE_AT);
+      const since = (now - Number(from)) / 1000;
+      this.logger.debug(`${since} has passed since last message`);
+      // TODO add inactive interaction
 
-      // TODO add inactive
       const { flag, context } = await this.chatService.diceRollerFullHouse(false, false, false);
-      // TODO react!
       if (context) {
+        this.logger.debug(`Flag ${flag} triggered`);
         this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
         await this.channel.send(context);
       }
 
+      if (flag === PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY) {
+        const guild = await this.client.guilds.fetch('217529277489479681');
+
+        let role = await guild.roles.cache.get('543816517343641621');
+        if (!role) await guild.roles.fetch('543816517343641621');
+
+        if (role && role.members.size) {
+          for (const [id, guildMember] of role.members.entries()) {
+            const guildMemberWithPresence = await guild.members.fetch({ user: id, withPresences: true, force: true });
+            for (const activity of guildMemberWithPresence.presence.activities) {
+              if (activity.name === 'World of Warcraft') {
+                this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
+                const raidTime = corpus.tier.random();
+                await this.channel.send(`<@${id}> ${raidTime}`);
+                await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600))
+              }
+            }
+          }
+        }
+      }
+
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
   }
 
@@ -229,21 +274,16 @@ export class AppService implements OnApplicationBootstrap {
       }
 
       /**
-       * @description Check is dialog with selected user already exists
+       * @description Check is context of a channel is already presents
        * @description If not flag, consider dialog started
        * @description anyway, refresh TTL start key
        */
-      const messageContextNumber = await this.redisService.llen(userName);
-      this.logger.log(`Dialog context with user: ${userName} has ${messageContextNumber} messages`);
-
-      await this.redisService.set(id, userName, 'EX', 900);
+      const messageContextNumber = await this.redisService.llen(channelId);
+      this.logger.log(`Dialog context in ${channelId} channel has ${messageContextNumber} messages`);
 
       if (messageContextNumber) {
-        if (messageContextNumber > 4) {
-          await this.redisService.lpop(userName);
-        }
-
-        const storedContext = await this.redisService.lrange(userName, 0, 4);
+        const storedContext = await this.redisService.lrange(channelId, -3, -1);
+        // TODO add merge ...dialogContext
         dialogContext = [...storedContext];
       }
 
@@ -258,7 +298,8 @@ export class AppService implements OnApplicationBootstrap {
         const engineIndex = randInBetweenInt(0, 1);
 
         this.chatEngine = this.chatEngineStorage[engineIndex];
-        console.log(engineIndex, dialogContext);
+        this.logger.debug(`Engine ${engineIndex} selected. REQUEST =>`);
+        console.log(dialogContext);
 
         const { data } = await this.chatEngine.createCompletion({
           model: OPENAI_MODEL_ENGINE.ChatGPT3,
@@ -269,21 +310,21 @@ export class AppService implements OnApplicationBootstrap {
           frequency_penalty: randInBetweenFloat(0.3, 0.6, 1), // 0.0
           presence_penalty: randInBetweenFloat(0.0, 0.6, 1),
           best_of: 2,
-          user: author.id,
           stop: [`${userName}:`],
         });
 
         chatResponses = data;
       } catch (chatEngineError) {
-
         this.logger.error(`${chatEngineError.response.status} : ${chatEngineError.response.statusText}`);
 
-        const backoffReply = corpus.backoff.random();
+        const backoffReply = corpus.backoff.random()
+        const timeout = randInBetweenInt(30, 600);
 
         await this.channel.send(backoffReply);
         await this.redisService.set(
-          PEPA_CHAT_KEYS.FULL_TILT_IGNORE, 1, 'EX', randInBetweenInt(30, 600)
+          PEPA_CHAT_KEYS.FULL_TILT_IGNORE, 1, 'EX', timeout
         );
+        this.logger.error(`Pepa will ignore everything for ${timeout} seconds`);
 
         return { response: backoffReply, channelId };
       }
@@ -293,7 +334,7 @@ export class AppService implements OnApplicationBootstrap {
 
         await this.channel.send(mediaReply);
       }
-      // TODO pretty format
+
       let response: string;
       const responseChoice = chatResponses.choices.reduce((prev, current) => (prev.index > current.index) ? prev : current);
       const formatString = responseChoice.text.split(/а:/);
@@ -302,7 +343,7 @@ export class AppService implements OnApplicationBootstrap {
 
       response = this.chatService.prepareChatText(response);
 
-      await this.redisService.rpush(userName, `Пепа: ${response}`);
+      await this.redisService.rpush(channelId, `Пепа: ${response}`);
 
       if (response) {
         await this.channel.send(response);
