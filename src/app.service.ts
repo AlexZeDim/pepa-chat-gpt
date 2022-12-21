@@ -319,11 +319,13 @@ export class AppService implements OnApplicationBootstrap {
         await this.channel.send(mediaReply);
       }
 
-      let response: string;
       const responseChoice = chatResponses.choices.reduce((prev, current) => (prev.index > current.index) ? prev : current);
-      const formatString = (responseChoice.text as string).replace(/пепа:/, '').replace(/пеп:/, '').replace(/пепегий:/, '');
 
-      response = this.chatService.prepareChatText(formatString);
+      const pepaNaming = new RegExp('пе[а-я]*:', 'i');
+
+      const formatString = pepaNaming.test(responseChoice.text) ? responseChoice.text.replace(pepaNaming, '').trim() : responseChoice.text.trim();
+
+      const response = this.chatService.prepareChatText(formatString);
 
       await this.redisService.rpush(channelId, `Пепа: ${response}`);
 

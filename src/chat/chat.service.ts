@@ -255,7 +255,7 @@ export class ChatService {
   }
 
   public async addToContext (channelId: string, username: string, content: string) {
-    await this.redisService.rpush(channelId, `${username}: ${content}`);
+    await this.redisService.rpush(channelId, `${username}: ${this.prepareChatText(content)}`);
     const channelContextLength = await this.redisService.llen(channelId);
     if (channelContextLength > 25) await this.redisService.lpop(channelId);
   }
