@@ -214,11 +214,13 @@ export class ChatService {
   }
 
   public prepareChatText (context: string): string {
-    let userPrettyText = context.replace(/\n/g, ' ').replace(/\\n/g, ' ');
-    if (!userPrettyText.endsWith(".") || !userPrettyText.endsWith("?") || !userPrettyText.endsWith("!")) {
-      userPrettyText = `${userPrettyText}.`
-    }
-    return userPrettyText;
+    const userPrettyText = context.replace(/\n/g, ' ').replace(/\\n/g, ' ');
+
+    const checks = ['.', '?', '!'];
+
+    const isEnding = checks.some((ending) => userPrettyText.endsWith(ending));
+
+    return !isEnding ? `${userPrettyText}.` : userPrettyText;
   }
 
   public async updateLastActiveMessage () {
@@ -240,7 +242,7 @@ export class ChatService {
     const unixNow = localTime.unix();
     const unixFrom = await this.redisService.get(PEPA_CHAT_KEYS.LAST_MESSAGE_AT);
     const since = (unixNow - Number(unixFrom)) / 60;
-    this.logger.debug(`${since} minutes have passed since last message`);
+    this.logger.debug(`${localTime.hour()}:h ${localTime.minute()}:m | ${since} minutes have passed since last message`);
 
     return since > 120 && isReact;
   }

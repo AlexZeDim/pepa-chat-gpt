@@ -7,6 +7,7 @@ import { Job, Queue } from 'bullmq';
 import { Configuration, OpenAIApi } from 'openai';
 import { Interval } from '@nestjs/schedule';
 import { ChatService } from './chat/chat.service';
+import { setTimeout } from 'node:timers/promises';
 
 import {
   chatQueue,
@@ -193,6 +194,9 @@ export class AppService implements OnApplicationBootstrap {
 
         if (flag === PEPA_TRIGGER_FLAG.MESSAGE) {
           await message.channel.sendTyping();
+          await setTimeout(randInBetweenInt(1, 4) * 1000);
+          await message.channel.sendTyping();
+
           this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
           await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
 
