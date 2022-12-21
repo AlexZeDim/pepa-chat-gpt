@@ -30,7 +30,6 @@ GITHUB_TOKEN=
 OPENAI_API_KEY_1=
 OPENAI_API_KEY_2=
 DISCORD_TOKEN=
-[package.json](package.json)
-```[app.service.ts](src%2Fapp.service.ts)
+```
 3. Install all dependencies `bashnpm install` or `yarn`.
 4. Build & run via `nest start`
