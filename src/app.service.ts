@@ -290,7 +290,7 @@ export class AppService implements OnApplicationBootstrap {
       this.logger.log(`Dialog context in ${channelId} channel has ${messageContextNumber} messages`);
 
       if (messageContextNumber) {
-        const storedContext = await this.redisService.lrange(channelId, -3, -1);
+        const storedContext = await this.redisService.lrange(channelId, -2, -1);
         dialogContext = [...dialogContext, ...storedContext];
       }
 
