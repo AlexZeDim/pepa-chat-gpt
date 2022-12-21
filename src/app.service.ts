@@ -323,6 +323,8 @@ export class AppService implements OnApplicationBootstrap {
 
         const backoffReply = await this.chatService.triggerError();
 
+        await this.channel.send(backoffReply);
+
         return { response: backoffReply, channelId };
       }
 
