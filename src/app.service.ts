@@ -233,7 +233,7 @@ export class AppService implements OnApplicationBootstrap {
             this.logger.debug(`Trying to fetch ${guildMember.user.username}`);
             const guildMemberWithPresence = await guild.members.fetch({ user: id, withPresences: true });
             console.log(guildMemberWithPresence.presence);
-            if (!(guildMemberWithPresence.presence.activities && guildMemberWithPresence.presence.activities.length)) {
+            if (!(guildMemberWithPresence.presence && guildMemberWithPresence.presence.activities && guildMemberWithPresence.presence.activities.length)) {
               continue;
             }
             for (const activity of guildMemberWithPresence.presence.activities) {
