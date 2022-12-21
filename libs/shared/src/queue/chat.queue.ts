@@ -9,10 +9,10 @@ const queueOptions: JobsOptions = {
 export const chatQueue: QueueInterface = {
   name: 'ORA:chat',
   workerOptions: {
-    concurrency: 5,
+    concurrency: 1,
     limiter: {
       duration: 1000 * 60,
-      max: 5
+      max: 1
     }
   },
   options: {

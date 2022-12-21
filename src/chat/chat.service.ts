@@ -1,7 +1,7 @@
 import { Client, Message } from 'discord.js';
 import Redis from 'ioredis';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -15,6 +15,7 @@ import isBetween from 'dayjs/plugin/isBetween';
 import {
   corpus,
   DiceInterface,
+  PEPA_CHAT_KEYS,
   PEPA_STORAGE_KEYS,
   PEPA_TRIGGER_FLAG,
   randInBetweenFloat,
@@ -24,6 +25,7 @@ import {
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name, { timestamp: true });
   constructor(
     @InjectRedis()
     private readonly redisService: Redis,
@@ -59,24 +61,29 @@ export class ChatService {
   }
 
   /**
-   * @description Don't to understand@feel it
-   * @description This is vegas
+   * @description Don't try tp understand it@feel it
+   * @description This is vegas, baby
    */
   async diceRollerFullHouse (
     isText: boolean = false,
     hasAttachment: boolean = false,
     isMentioned: boolean = false,
+    isMedia: boolean = false,
     isTest: boolean = false,
   ): Promise<DiceInterface> {
     try {
-      const localTime = dayjs();
-      const triggerChance = randInBetweenFloat(0, 1, 2);
+      if (isMedia) {
+        return { flag: PEPA_TRIGGER_FLAG.POST_MEME, context: corpus.media.random() };
+      }
 
       if (isTest) {
         return { flag: PEPA_TRIGGER_FLAG.TEST, context: `Привет, я Пепа` };
       }
 
-      if (!isText && !hasAttachment && !isMentioned) {
+      const localTime = dayjs();
+      const triggerChance = randInBetweenFloat(0, 1, 2);
+
+      if (!isText && !hasAttachment && !isMentioned && !isMedia) {
         /**
          * @description DID YOU FORGET TO DEPLETE YOUR KEY?
          */
@@ -188,10 +195,8 @@ export class ChatService {
 
   public whoAmIContext (authorName: string): string[] {
     return [
-      `${authorName}: Тебя зовут Пепа.`,
-      `Пепа: Меня зовут Пепа.`,
-      `${authorName}: You like to play World of Warcraft for monk class.`,
-      `Пепа: I like to play World of Warcraft for monk class.`,
+      `${authorName}: Тебя зовут Пепа и ты любишь играть в World of Warcraft на монахе .`,
+      `Пепа: Меня зовут Пепа, я люблю играть в World of Warcraft на монахе.`,
       // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests.`,
       // `Пепа: I like to push mythic plus, raid with friends and loot gear from weekly chest!`,
     ];
@@ -199,8 +204,8 @@ export class ChatService {
 
   public didYouKnowThat (authorName: string): string[] {
     return [
-      `${authorName}: Тебя зовут Пепа.`,
-      `Пепа: Меня зовут Пепа.`,
+      `${authorName}: Тебя зовут Пепа и ты любишь играть в World of Warcraft на монахе .`,
+      `Пепа: Меня зовут Пепа, я люблю играть в World of Warcraft на монахе.`,
       // `${authorName}: You like to play World of Warcraft for monk class.`,
       // `Пепа: I like to play World of Warcraft for monk class.`,
       // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests.`,
@@ -208,11 +213,60 @@ export class ChatService {
     ];
   }
 
-  public prepareChatText = (context: string): string => {
+  public prepareChatText (context: string): string {
     let userPrettyText = context.replace(/\n/g, ' ').replace(/\\n/g, ' ');
     if (!userPrettyText.endsWith(".") || !userPrettyText.endsWith("?") || !userPrettyText.endsWith("!")) {
       userPrettyText = `${userPrettyText}.`
     }
     return userPrettyText;
+  }
+
+  public async updateLastActiveMessage () {
+    const unixNow = dayjs().unix();
+    await this.redisService.set(PEPA_CHAT_KEYS.LAST_MESSAGE_AT, unixNow);
+    this.logger.debug(`Last message timestamp updated for ${unixNow}`);
+  }
+
+  public async getLastActiveMessage (): Promise<boolean> {
+    const localTime = dayjs();
+
+    const [startRaidHoney, endRaidHoney] = [
+      localTime.hour(9).minute(0),
+      localTime.hour(23).minute(59),
+    ];
+
+    const isReact = localTime.isBetween(startRaidHoney, endRaidHoney);
+
+    const unixNow = localTime.unix();
+    const unixFrom = await this.redisService.get(PEPA_CHAT_KEYS.LAST_MESSAGE_AT);
+    const since = (unixNow - Number(unixFrom)) / 60;
+    this.logger.debug(`${since} minutes have passed since last message`);
+
+    return since > 120 && isReact;
+  }
+
+  public async isIgnoreFlag (): Promise<boolean> {
+    const ignoreMe = (!!await this.redisService.exists(PEPA_CHAT_KEYS.FULL_TILT_IGNORE));
+    if (ignoreMe) {
+      const ttl = await this.redisService.ttl(PEPA_CHAT_KEYS.FULL_TILT_IGNORE);
+      this.logger.debug(`Pepa will ignore everything for ${ttl} more seconds`);
+    }
+    return ignoreMe;
+  }
+
+  public async addToContext (channelId: string, username: string, content: string) {
+    await this.redisService.rpush(channelId, `${username}: ${content}`);
+    const channelContextLength = await this.redisService.llen(channelId);
+    if (channelContextLength > 25) await this.redisService.lpop(channelId);
+  }
+
+  public async triggerError (): Promise<string> {
+    const timeout = randInBetweenInt(30, 600);
+    await this.redisService.set(
+      PEPA_CHAT_KEYS.FULL_TILT_IGNORE, 1, 'EX', timeout
+    );
+    this.logger.error(`Pepa will ignore everything for ${timeout} seconds`);
+
+    return corpus.backoff.random();
   }
 }
