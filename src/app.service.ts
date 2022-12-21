@@ -308,9 +308,9 @@ export class AppService implements OnApplicationBootstrap {
 
         const { data } = await this.chatEngine.createCompletion({
           model: OPENAI_MODEL_ENGINE.ChatGPT3,
-          prompt: dialogContext,
+          prompt: dialogContext.join('\n'),
           temperature: 0.7, // randInBetweenFloat(0.5, 0.9, 1),
-          max_tokens: 1999,
+          max_tokens: 2048,
           // top_p: randInBetweenFloat(0.3, 0.5, 1),
           frequency_penalty:  0.0, // randInBetweenFloat(0.3, 0.6, 1),
           presence_penalty: randInBetweenFloat(-2.0, 2.0, 1),
