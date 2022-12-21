@@ -80,7 +80,7 @@ export class ChatService {
         return { flag: PEPA_TRIGGER_FLAG.TEST, context: `Привет, я Пепа` };
       }
 
-      const localTime = dayjs();
+      const localTime = dayjs().tz("Europe/Moscow");
       const triggerChance = randInBetweenFloat(0, 1, 2);
 
       if (!isText && !hasAttachment && !isMentioned && !isMedia) {
@@ -230,7 +230,7 @@ export class ChatService {
   }
 
   public async getLastActiveMessage (): Promise<boolean> {
-    const localTime = dayjs();
+    const localTime = dayjs().tz("Europe/Moscow");
 
     const [startRaidHoney, endRaidHoney] = [
       localTime.hour(9).minute(0),
