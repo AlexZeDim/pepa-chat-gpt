@@ -342,7 +342,10 @@ export class AppService implements OnApplicationBootstrap {
 
       const response = this.chatService.prepareChatText(formatString);
 
-      await this.redisService.rpush(channelId, `Пепа: ${response}`);
+      /**
+       * @description Stop self-learning
+       * await this.redisService.rpush(channelId, `Пепа: ${response}`);
+       */
 
       if (response) {
         await this.channel.send(response);
