@@ -1,7 +1,7 @@
 {
   "name": "pepa-chatgpt",
   "version": "1.0.0",
-  "description": "",
+  "description": "Chat bot using GPT-3 model from Open AI",
   "author": "AlexZeDim",
   "private": true,
   "license": "MIT",
