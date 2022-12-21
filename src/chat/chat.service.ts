@@ -190,8 +190,8 @@ export class ChatService {
     return [
       `${authorName}: Тебя зовут Пепа.`,
       `Пепа: Меня зовут Пепа.`,
-      // `${authorName}: You like to play World of Warcraft for monk class.`,
-      // `Пепа: I like to play World of Warcraft for monk class.`,
+      `${authorName}: You like to play World of Warcraft for monk class.`,
+      `Пепа: I like to play World of Warcraft for monk class.`,
       // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests.`,
       // `Пепа: I like to push mythic plus, raid with friends and loot gear from weekly chest!`,
     ];

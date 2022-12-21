@@ -284,10 +284,8 @@ export class AppService implements OnApplicationBootstrap {
       if (messageContextNumber) {
         const storedContext = await this.redisService.lrange(channelId, -3, -1);
         // TODO add merge ...dialogContext
-        dialogContext = [...storedContext];
+        dialogContext = [...dialogContext, ...storedContext];
       }
-
-      dialogContext.push(`${userName}: ${this.chatService.prepareChatText(content)}`);
 
       this.channel = await this.client.channels.cache.get(channelId) as TextChannel;
       if (!this.channel) this.channel = await this.client.channels.fetch(channelId) as TextChannel;
