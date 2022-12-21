@@ -217,7 +217,7 @@ export class AppService implements OnApplicationBootstrap {
       const { flag, context } = await this.chatService.diceRollerFullHouse(false, false, false, isMedia);
       if (context) {
         this.logger.debug(`Flag ${flag} triggered`);
-        this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
+        this.channel = await this.client.channels.cache.get('217532087001939969') as TextChannel;
         await this.channel.send(context);
       }
 
@@ -230,9 +230,12 @@ export class AppService implements OnApplicationBootstrap {
         this.logger.debug(`Found ${role.members.size} raiders!`);
         if (role && role.members.size) {
           for (const [id, guildMember] of role.members.entries()) {
+            if (await this.redisService.exists(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY)) {
+              break;
+            }
+
             this.logger.debug(`Trying to fetch ${guildMember.user.username}`);
             const guildMemberWithPresence = await guild.members.fetch({ user: id, withPresences: true });
-            console.log(guildMemberWithPresence.presence);
             if (!(guildMemberWithPresence.presence && guildMemberWithPresence.presence.activities && guildMemberWithPresence.presence.activities.length)) {
               continue;
             }
@@ -240,9 +243,10 @@ export class AppService implements OnApplicationBootstrap {
               this.logger.debug(`Scan ${guildMember.user.username} with activity ${activity.name}`);
               if (activity.name === 'World of Warcraft') {
                 this.channel = await this.client.channels.cache.get('217532087001939969') as TextChannel;
-                const raidTime = corpus.tier.random();
+                const raidTime = corpus.hardcore.random();
                 await this.channel.send(`<@${id}> ${raidTime}`);
                 await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600));
+                break;
               }
             }
           }

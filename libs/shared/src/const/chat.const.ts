@@ -65,12 +65,21 @@ export const variation = new Collection([
   [3, 'кринж'],
 ]);
 
+export const tier = new Collection([
+  [1, 'в волте'],
+  [2, 'в хранилище'],
+  [3, 'на разагеш'],
+  [3, 'на праймал консулах'],
+]);
+
+
 export const corpus = {
 
   raiding: new Collection<number, Collection<number, string>>([
     [1, wake],
     [2, tags],
     [3, raid],
+    [4, tier],
     [10, traders],
     [11, new Collection([
       [1, 'своего рла'] ])
@@ -142,13 +151,14 @@ export const corpus = {
     [11 , 'мои мозги перегрелись'],
   ]),
 
-  tier: new Collection<number, string>([
+  hardcore: new Collection<number, string>([
     [1, 'рейдишь там себе наверное, да?'],
     [2, 'накручиваешь себе логи, вот вы и вайпаетесь'],
     [3, 'ну што, норм лут сыплет?'],
     [4, 'что там по бест-пулу?'],
-    [5, 'зал славы - твердо и чотко?'],
+    [5, 'в зал славы - твердо и чотко?'],
   ]),
+
   keys: new Collection<number, Collection<number, string>>([
     [1, new Collection([
       [1, 'деплитать'],

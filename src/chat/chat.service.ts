@@ -164,7 +164,7 @@ export class ChatService {
                 context.push(`${raid} ${action}`);
               }
 
-              if (index > 4) break;
+              if (index > 5) break;
 
               context.push(phrase.random());
             }
