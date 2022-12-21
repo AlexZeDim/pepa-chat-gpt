@@ -156,9 +156,9 @@ export class ChatService {
             const context = [];
 
             for (const [index, phrase] of corpus.raiding.entries()) {
-              if (index === 4) {
+              if (index === 3) {
                 const elIndex = randInBetweenInt(1 , phrase.size);
-                const raid = phrase.at(elIndex);
+                const raid = phrase.get(elIndex);
                 const action = corpus.raiding.get(elIndex + 9).random();
 
                 context.push(`${raid} ${action}`);

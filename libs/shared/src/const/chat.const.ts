@@ -71,7 +71,7 @@ export const corpus = {
   raiding: new Collection<number, Collection<number, string>>([
     [1, wake],
     [2, tags],
-    [4, raid],
+    [3, raid],
     [10, traders],
     [11, new Collection([
       [1, 'своего рла'] ])

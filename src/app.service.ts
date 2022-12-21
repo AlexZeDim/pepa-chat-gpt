@@ -234,7 +234,7 @@ export class AppService implements OnApplicationBootstrap {
             for (const activity of guildMemberWithPresence.presence.activities) {
               this.logger.debug(`Scan ${guildMember.user.username} with activity ${activity.name}`);
               if (activity.name === 'World of Warcraft') {
-                this.channel = await this.client.channels.cache.get('1051512756664279092') as TextChannel;
+                this.channel = await this.client.channels.cache.get('217532087001939969') as TextChannel;
                 const raidTime = corpus.tier.random();
                 await this.channel.send(`<@${id}> ${raidTime}`);
                 await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600))
