@@ -127,7 +127,7 @@ export class AppService implements OnApplicationBootstrap {
   private async storage() {
     const guild = await this.client.guilds.fetch('217529277489479681');
 
-    await this.redisService.del(PEPA_STORAGE_KEYS.EMOJIS);
+/*    await this.redisService.del(PEPA_STORAGE_KEYS.EMOJIS);
     await this.queue.obliterate();
 
     for (const emoji of guild.emojis.cache.values()) {
@@ -135,7 +135,7 @@ export class AppService implements OnApplicationBootstrap {
         await this.redisService.rpush(PEPA_STORAGE_KEYS.EMOJIS, emoji.id);
         this.logger.log(`Add ${emoji.name} emoji to storage`);
       }
-    }
+    }*/
 
     this.storageEmojisLength = await this.redisService.llen(PEPA_STORAGE_KEYS.EMOJIS);
     this.logger.log(`Inserted ${this.storageEmojisLength} pepe emoji!`);
@@ -153,7 +153,7 @@ export class AppService implements OnApplicationBootstrap {
      */
     this.client.on(Events.MessageCreate, async (message) => {
       try {
-        const isIgnore = await this.chatService.isIgnoreFlag();
+        let isIgnore = await this.chatService.isIgnoreFlag();
 
         if (message.author.id === this.client.user.id || message.author.bot) return;
 
@@ -168,6 +168,11 @@ export class AppService implements OnApplicationBootstrap {
 
         if (content) {
           await this.chatService.addToContext(channelId, author.username, content);
+        }
+
+        if (message.channel && typeof message.channel.isTextBased) {
+          const parentId = (message.channel as TextChannel).parentId;
+          if (parentId !== '886541776968613908') isIgnore = true;
         }
 
         if (isIgnore) return;
