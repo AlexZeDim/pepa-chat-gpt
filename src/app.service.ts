@@ -321,11 +321,9 @@ export class AppService implements OnApplicationBootstrap {
 
       let response: string;
       const responseChoice = chatResponses.choices.reduce((prev, current) => (prev.index > current.index) ? prev : current);
-      const formatString = responseChoice.text.split(/а:/);
+      const formatString = (responseChoice.text as string).replace(/пепа:/, '').replace(/пеп:/, '').replace(/пепегий:/, '');
 
-      formatString.length === 1 ? response = formatString[0] : response = formatString[1];
-
-      response = this.chatService.prepareChatText(response);
+      response = this.chatService.prepareChatText(formatString);
 
       await this.redisService.rpush(channelId, `Пепа: ${response}`);
 
