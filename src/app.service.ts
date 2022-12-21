@@ -230,14 +230,19 @@ export class AppService implements OnApplicationBootstrap {
         this.logger.debug(`Found ${role.members.size} raiders!`);
         if (role && role.members.size) {
           for (const [id, guildMember] of role.members.entries()) {
-            const guildMemberWithPresence = await guild.members.fetch({ user: id, withPresences: true, force: true });
+            this.logger.debug(`Trying to fetch ${guildMember.user.username}`);
+            const guildMemberWithPresence = await guild.members.fetch({ user: id, withPresences: true });
+            console.log(guildMemberWithPresence.presence);
+            if (!(guildMemberWithPresence.presence.activities && guildMemberWithPresence.presence.activities.length)) {
+              continue;
+            }
             for (const activity of guildMemberWithPresence.presence.activities) {
               this.logger.debug(`Scan ${guildMember.user.username} with activity ${activity.name}`);
               if (activity.name === 'World of Warcraft') {
                 this.channel = await this.client.channels.cache.get('217532087001939969') as TextChannel;
                 const raidTime = corpus.tier.random();
                 await this.channel.send(`<@${id}> ${raidTime}`);
-                await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600))
+                await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600));
               }
             }
           }
