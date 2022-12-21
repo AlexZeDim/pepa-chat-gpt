@@ -11,8 +11,8 @@ export const chatQueue: QueueInterface = {
   workerOptions: {
     concurrency: 1,
     limiter: {
-      duration: 6000,
-      max: 2
+      duration: 7_000,
+      max: 1
     }
   },
   options: {
