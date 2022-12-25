@@ -178,7 +178,7 @@ export class ChatService {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
-      if ((isText && triggerChance <= 0.6) || isMentioned) {
+      if ((isText && triggerChance <= 0.06) || isMentioned) {
         return { flag: PEPA_TRIGGER_FLAG.MESSAGE };
       }
 

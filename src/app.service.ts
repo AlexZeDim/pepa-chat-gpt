@@ -169,7 +169,10 @@ export class AppService implements OnApplicationBootstrap {
         if (content) {
           await this.chatService.addToContext(channelId, author.username, content);
         }
-
+        /**
+         * @description React only for specific channels
+         * TODO refactor make it a check function
+         */
         if (message.channel && typeof message.channel.isTextBased) {
           const parentId = (message.channel as TextChannel).parentId;
           if (parentId !== '886541776968613908') isIgnore = true;
@@ -182,10 +185,12 @@ export class AppService implements OnApplicationBootstrap {
          */
         if (message.mentions && message.mentions.users.size) {
           isMentioned = message.mentions.users.has(this.client.user.id);
-          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(7, 10));
         } else {
           const regex = new RegExp('^пеп');
           isMentioned = content.split(' ').filter(Boolean).some(s => regex.test(s.toLowerCase()));
+        }
+
+        if (isMentioned) {
           await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(7, 10));
         }
 
