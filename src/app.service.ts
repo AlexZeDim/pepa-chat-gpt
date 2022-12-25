@@ -177,19 +177,23 @@ export class AppService implements OnApplicationBootstrap {
 
         if (isIgnore) return;
 
+        /**
+         * TODO make this as a chat method with global
+         */
         if (message.mentions && message.mentions.users.size) {
           isMentioned = message.mentions.users.has(this.client.user.id);
-          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
-        }
-
-        const wasMentioned = (!!await this.redisService.exists(PEPA_CHAT_KEYS.MENTIONED));
-        if (wasMentioned) {
-          isMentioned = true;
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(7, 10));
         } else {
           const regex = new RegExp('^пеп');
           isMentioned = content.split(' ').filter(Boolean).some(s => regex.test(s.toLowerCase()));
-          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(7, 10));
         }
+
+        if (message.channelId === '1051512756664279092') {
+          const wasMentioned = (!!await this.redisService.exists(PEPA_CHAT_KEYS.MENTIONED));
+          if (wasMentioned) isMentioned = true;
+        }
+
 
         const { flag } = await this.chatService.diceRollerFullHouse(!!content, !!message.attachments.size, isMentioned);
 
@@ -234,27 +238,28 @@ export class AppService implements OnApplicationBootstrap {
 
         this.logger.debug(`Found ${role.members.size} raiders!`);
         if (role && role.members.size) {
-          for (const [id, guildMember] of role.members.entries()) {
+          const guildMemberToTag = role.members.random();
+
             if (await this.redisService.exists(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY)) {
-              break;
+              return;
             }
 
-            this.logger.debug(`Trying to fetch ${guildMember.user.username}`);
-            const guildMemberWithPresence = await guild.members.fetch({ user: id, withPresences: true });
+            this.logger.debug(`Trying to fetch ${guildMemberToTag.user.username}`);
+            const guildMemberWithPresence = await guild.members.fetch({ user: guildMemberToTag.user.id, withPresences: true });
             if (!(guildMemberWithPresence.presence && guildMemberWithPresence.presence.activities && guildMemberWithPresence.presence.activities.length)) {
-              continue;
+              return;
             }
             for (const activity of guildMemberWithPresence.presence.activities) {
-              this.logger.debug(`Scan ${guildMember.user.username} with activity ${activity.name}`);
+              this.logger.debug(`Scan ${guildMemberWithPresence.user.username} with activity ${activity.name}`);
               if (activity.name === 'World of Warcraft') {
                 this.channel = await this.client.channels.cache.get('217532087001939969') as TextChannel;
                 const raidTime = corpus.hardcore.random();
-                await this.channel.send(`<@${id}> ${raidTime}`);
+                await this.channel.send(`<@${guildMemberWithPresence.user.id}> ${raidTime}`);
                 await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600));
                 break;
               }
             }
-          }
+
         }
       }
 

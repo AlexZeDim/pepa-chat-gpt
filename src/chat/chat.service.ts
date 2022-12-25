@@ -193,6 +193,10 @@ export class ChatService {
     }
   }
 
+  /**
+   * TODO randomize context
+   * @param authorName {string}
+   */
   public whoAmIContext (authorName: string): string[] {
     return [
       // `${authorName}: Тебя зовут Пепа и ты любишь играть в World of Warcraft на монахе .`,
