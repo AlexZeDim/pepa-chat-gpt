@@ -97,11 +97,13 @@ export const corpus = {
   ]),
 
   media: new Collection<number, string>([
-    [1, 'https://media.discordapp.net/attachments/878612342529749005/948200639920476200/3x.gif'],
-    [2, 'https://cdn.discordapp.com/attachments/803140156336898068/950467930947219476/1kTjqCU.mp4'],
-    [3, 'https://tenor.com/view/olyashaa-olyashaasaxon-%D0%BE%D0%BB%D1%8F%D1%88%D0%B0-%D1%87%D1%82%D0%BE-what-gif-20406193'],
-    [4, 'https://tenor.com/view/%D1%81%D0%B2%D0%B8%D0%BD%D1%8F%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D1%81%D0%B2%D0%B8%D0%BD%D1%8F-%D0%B4%D0%B6%D0%B0%D0%BA%D1%83%D0%B7%D1%96-%D0%B2%D0%BE%D0%B4%D0%B0-%D1%81%D0%BC%D0%B0%D1%87%D0%BD%D0%BE%D0%B3%D0%BE-gif-26990311'],
-    [5, 'https://imgur.com/LHZGEqD'],
+    [1, 'https://media.giphy.com/media/1Q9nERoTImXwuLq4HV/giphy.mp4'],
+    [2, 'https://media.giphy.com/media/hVF5yk66RUWl3VhjTx/giphy.mp4'],
+    [3, 'https://media.giphy.com/media/aegZ87q5C0oTVvjozd/giphy.mp4'],
+    [4, 'https://media.giphy.com/media/ayb6gKMmX9JDX0hLRU/giphy.mp4'],
+    [5, 'https://media.giphy.com/media/7z1X6zxrxsOqzoZZT2/giphy.mp4'],
+    [6, 'https://media.giphy.com/media/DQL2lD8CoCsfn1uQtD/giphy.mp4'],
+    [7, 'https://media.giphy.com/media/4UNTtS4FcTKhF3K39c/giphy.mp4'],
   ]),
 
   chest: new Collection<number, Collection<number, string>>([
