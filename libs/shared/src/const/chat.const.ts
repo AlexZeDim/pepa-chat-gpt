@@ -104,6 +104,7 @@ export const corpus = {
     [5, 'https://media.giphy.com/media/7z1X6zxrxsOqzoZZT2/giphy.mp4'],
     [6, 'https://media.giphy.com/media/DQL2lD8CoCsfn1uQtD/giphy.mp4'],
     [7, 'https://media.giphy.com/media/4UNTtS4FcTKhF3K39c/giphy.mp4'],
+    [8, 'https://media.giphy.com/media/cy6BlXT1TpYWKzjhlV/giphy.mp4']
   ]),
 
   chest: new Collection<number, Collection<number, string>>([
