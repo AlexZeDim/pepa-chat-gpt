@@ -97,14 +97,14 @@ export const corpus = {
   ]),
 
   media: new Collection<number, string>([
-    [1, 'https://media.giphy.com/media/1Q9nERoTImXwuLq4HV/giphy.mp4'],
-    [2, 'https://media.giphy.com/media/hVF5yk66RUWl3VhjTx/giphy.mp4'],
+    [1, 'https://media.giphy.com/media/TiLncJHD5lsk79NjuY/giphy.mp4'],
+    [2, 'https://media.giphy.com/media/kneHstOOnOJ1F2e9D4/giphy.mp4'],
     [3, 'https://media.giphy.com/media/aegZ87q5C0oTVvjozd/giphy.mp4'],
     [4, 'https://media.giphy.com/media/ayb6gKMmX9JDX0hLRU/giphy.mp4'],
     [5, 'https://media.giphy.com/media/7z1X6zxrxsOqzoZZT2/giphy.mp4'],
     [6, 'https://media.giphy.com/media/DQL2lD8CoCsfn1uQtD/giphy.mp4'],
     [7, 'https://media.giphy.com/media/4UNTtS4FcTKhF3K39c/giphy.mp4'],
-    [8, 'https://media.giphy.com/media/cy6BlXT1TpYWKzjhlV/giphy.mp4']
+    [8, 'https://media.giphy.com/media/UjSc3VqGQmdTwkKwZ4/giphy.mp4']
   ]),
 
   chest: new Collection<number, Collection<number, string>>([
