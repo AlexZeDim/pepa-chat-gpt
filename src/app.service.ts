@@ -284,6 +284,8 @@ export class AppService implements OnApplicationBootstrap {
 
       let userName: string = author.username;
 
+      const newYear = !!(await this.redisService.exists(PEPA_TRIGGER_FLAG.NEW_YEAR));
+
       if (reference) {
         /**
          * @description reference exists but no original message found
@@ -313,6 +315,15 @@ export class AppService implements OnApplicationBootstrap {
       if (!this.channel) this.channel = await this.client.channels.fetch(channelId) as TextChannel;
 
       let chatResponses;
+
+      /**
+       * @description TODO REFACTOR
+       * @description happy new year 2023
+       */
+      if (newYear) {
+        this.channel = await this.client.channels.cache.get('217532087001939969') as TextChannel;
+        dialogContext = ['Пепа, сочини поздравление с новым 2023 годом для монахов играющих в World of Warcraft на 1900 символов'];
+      }
 
       try {
         const engineIndex = randInBetweenInt(0, 1);
