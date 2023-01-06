@@ -5,7 +5,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Client, Events, Partials, TextChannel } from 'discord.js';
 import { Job, Queue } from 'bullmq';
 import { Configuration, OpenAIApi } from 'openai';
-import { Interval } from '@nestjs/schedule';
+import { Timeout } from '@nestjs/schedule';
 import { ChatService } from './chat/chat.service';
 import { setTimeout } from 'node:timers/promises';
 
@@ -222,7 +222,7 @@ export class AppService implements OnApplicationBootstrap {
     });
   }
 
-  @Interval(60_000)
+  @Timeout(60_000)
   async idleReaction() {
     try {
       const isMedia = await this.chatService.getLastActiveMessage();
