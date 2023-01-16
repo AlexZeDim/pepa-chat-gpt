@@ -1,13 +1,15 @@
 import Redis from 'ioredis';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { GatewayIntentBits } from 'discord-api-types/v10';
+import { GatewayIntentBits, Routes } from 'discord-api-types/v10';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Client, Events, Partials, TextChannel } from 'discord.js';
+import { Client, Collection, Events, Partials, REST, TextChannel } from 'discord.js';
 import { Job, Queue } from 'bullmq';
 import { Configuration, OpenAIApi } from 'openai';
 import { Timeout } from '@nestjs/schedule';
 import { ChatService } from './chat/chat.service';
 import { setTimeout } from 'node:timers/promises';
+import { BullQueueInject, BullWorker, BullWorkerProcess } from '@anchan828/nest-bullmq';
+import { ICommand } from './types';
 
 import {
   chatQueue,
@@ -21,17 +23,17 @@ import {
   randInBetweenFloat,
   randInBetweenInt,
 } from '@app/shared';
-
-import { BullQueueInject, BullWorker, BullWorkerProcess } from '@anchan828/nest-bullmq';
-import * as console from 'console';
-
+import { Whoami } from './commands/whoami.command';
 
 @Injectable()
 @BullWorker({ queueName: chatQueue.name, options: chatQueue.workerOptions })
 export class AppService implements OnApplicationBootstrap {
   private readonly logger = new Logger(AppService.name, { timestamp: true });
+  private readonly rest = new REST({ version: '10' });
   private client: Client;
   private channel: TextChannel;
+  private commandsMessage: Collection<string, ICommand> = new Collection();
+  private commandSlash = [];
   private chatConfiguration: [Configuration, Configuration];
   private chatEngineStorage: [OpenAIApi, OpenAIApi];
   private chatEngine: OpenAIApi;
@@ -64,9 +66,20 @@ export class AppService implements OnApplicationBootstrap {
 
     await this.loadBot();
 
+    await this.loadCommands();
+
     await this.bot();
 
     await this.test();
+  }
+
+  private async loadCommands(): Promise<void> {
+    this.commandsMessage.set(Whoami.name, Whoami);
+    this.commandSlash.push(Whoami.slashCommand.toJSON());
+
+    await this.rest.put(Routes.applicationCommands(this.client.user.id), {
+      body: this.commandSlash,
+    });
   }
 
 
@@ -145,6 +158,25 @@ export class AppService implements OnApplicationBootstrap {
     this.client.on(Events.ClientReady, async () => {
         this.logger.log(`Logged in as ${this.client.user.tag}!`);
         await this.storage();
+      }
+    );
+
+    this.client.on(
+      Events.InteractionCreate,
+      async (interaction): Promise<void> => {
+        if (!interaction.isCommand()) return;
+        try {
+          const command = this.commandsMessage.get(interaction.commandName);
+          if (!command) return;
+
+          await command.executeInteraction(interaction);
+        } catch (errorException) {
+          this.logger.error(errorException);
+          await interaction.reply({
+            content: 'There was an error while executing this command!',
+            ephemeral: true,
+          });
+        }
       }
     );
 
