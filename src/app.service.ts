@@ -10,6 +10,7 @@ import { ChatService } from './chat/chat.service';
 import { setTimeout } from 'node:timers/promises';
 import { BullQueueInject, BullWorker, BullWorkerProcess } from '@anchan828/nest-bullmq';
 import { ICommand } from './types';
+import { Whoami } from './commands/whoami.command';
 
 import {
   chatQueue,
@@ -23,7 +24,6 @@ import {
   randInBetweenFloat,
   randInBetweenInt,
 } from '@app/shared';
-import { Whoami } from './commands/whoami.command';
 
 @Injectable()
 @BullWorker({ queueName: chatQueue.name, options: chatQueue.workerOptions })
@@ -123,6 +123,8 @@ export class AppService implements OnApplicationBootstrap {
     this.chatService.initDayJs();
 
     await this.client.login(process.env.DISCORD_TOKEN);
+
+    this.rest.setToken(process.env.DISCORD_TOKEN);
 
     this.chatConfiguration = [
       new Configuration({ apiKey: process.env.OPENAI_API_KEY_1 }),
