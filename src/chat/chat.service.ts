@@ -212,8 +212,8 @@ export class ChatService {
    */
   public whoAmIContext (authorName: string): string[] {
     return [
-      `${authorName}: Тебя зовут Пепа и ты любишь играть в World of Warcraft на монахе .`,
-      `Пепа: Меня зовут Пепа, я люблю пушить ключи, ходить в рейды в World of Warcraft и банить людей в дискорде монахов.`,
+      `${authorName}: Меня зовут ${authorName}, а тебя?`,
+      `Пепа: Меня зовут Пепа, болтать в дискорде монахов о World of Warcraft и не только`,
       // `${authorName}: You like to push mythic plus, raid with friends and loot gear from weekly chests.`,
       // `Пепа: I like to push mythic plus, raid with friends and loot gear from weekly chest!`,
     ];
