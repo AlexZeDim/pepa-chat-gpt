@@ -3,9 +3,9 @@
 </p>
 
 
-## Pepa ChatGP3 
+## Pepa Chat-GPT3 
 
-Pepa is chatbot, which uses OpenAI ChatGPT-3 model as an engine for text communications, some of its features are bound to the exact guild server for which he was developed. But his main feature is to communicate via text message is free-to-use.
+Pepa is a discord chatbot, which uses OpenAI ChatGPT-3 model as an engine for text communications, some of its features are bound to the exact guild server for which he was developed. But his main feature is to communicate via text message is free-to-use.
 
 Based on [**OpenAI ChatGPT-3**](https://openai.com/blog/chatgpt/). Designed for [**Monk's Temple of Five Dawns**](https://discord.com/invite/fYSNb5U). Operated by CMNW.
 
