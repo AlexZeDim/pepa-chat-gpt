@@ -25,7 +25,10 @@ import { ScheduleModule } from '@nestjs/schedule';
         },
       },
     }),
-    BullModule.registerQueue({ queueName: chatQueue.name, options: chatQueue.options }),
+    BullModule.registerQueue({
+      queueName: chatQueue.name,
+      options: chatQueue.options,
+    }),
   ],
   controllers: [],
   providers: [AppService, ChatService],

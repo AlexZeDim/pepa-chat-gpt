@@ -29,7 +29,7 @@ export class ChatService {
   constructor(
     @InjectRedis()
     private readonly redisService: Redis,
-  ) { }
+  ) {}
 
   initDayJs() {
     dayjs.extend(utc);
@@ -50,10 +50,19 @@ export class ChatService {
    * @description Use random react with emojis between 1 and 5 reactions
    * @description for maximum user behavior
    */
-  async chatPepeReaction (client: Client, message: Message, min: number, max: number) {
+  async chatPepeReaction(
+    client: Client,
+    message: Message,
+    min: number,
+    max: number,
+  ) {
     const anchorRandomElement = randInBetweenInt(min, max);
     const rangeAnchorElement = randInBetweenInt(min, 4);
-    const emojiPepeArrayId = await this.redisService.lrange(PEPA_STORAGE_KEYS.EMOJIS, (anchorRandomElement - rangeAnchorElement), anchorRandomElement);
+    const emojiPepeArrayId = await this.redisService.lrange(
+      PEPA_STORAGE_KEYS.EMOJIS,
+      anchorRandomElement - rangeAnchorElement,
+      anchorRandomElement,
+    );
     for (const emojiId of emojiPepeArrayId) {
       const emoji = await client.emojis.cache.get(emojiId);
       await message.react(emoji);
@@ -64,24 +73,26 @@ export class ChatService {
    * @description Don't try tp understand it@feel it
    * @description This is vegas, baby
    */
-  async diceRollerFullHouse (
-    isText: boolean = false,
-    hasAttachment: boolean = false,
-    isMentioned: boolean = false,
-    isMedia: boolean = false,
-    isTest: boolean = false,
+  async diceRollerFullHouse(
+    isText = false,
+    hasAttachment = false,
+    isMentioned = false,
+    isMedia = false,
+    isTest = false,
   ): Promise<DiceInterface> {
     try {
       if (isMedia) {
-        return { flag: PEPA_TRIGGER_FLAG.POST_MEME, context: corpus.media.random() };
+        return {
+          flag: PEPA_TRIGGER_FLAG.POST_MEME,
+          context: corpus.media.random(),
+        };
       }
 
       if (isTest) {
-
         return { flag: PEPA_TRIGGER_FLAG.TEST, context: `Привет, я Пепа` };
       }
 
-      const localTime = dayjs().tz("Europe/Moscow");
+      const localTime = dayjs().tz('Europe/Moscow');
       const triggerChance = randInBetweenFloat(0, 1, 2);
 
       if (!isText && !hasAttachment && !isMentioned && !isMedia) {
@@ -91,11 +102,17 @@ export class ChatService {
           localTime.month() === 11 &&
           localTime.day() === 31
         ) {
-          const isTimeToNewYear = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.NEW_YEAR);
+          const isTimeToNewYear = !!(await this.redisService.exists(
+            PEPA_TRIGGER_FLAG.NEW_YEAR,
+          ));
           if (isTimeToNewYear) {
-            await this.redisService.set(PEPA_TRIGGER_FLAG.NEW_YEAR, 1 , 'EX', 1000 * 60 * 60 * 6);
+            await this.redisService.set(
+              PEPA_TRIGGER_FLAG.NEW_YEAR,
+              1,
+              'EX',
+              1000 * 60 * 60 * 6,
+            );
           }
-
         }
         /**
          * @description DID YOU FORGET TO DEPLETE YOUR KEY?
@@ -106,10 +123,20 @@ export class ChatService {
             localTime.hour(23).minute(59),
           ];
 
-          const timeToDepleteKey = localTime.isBetween(startJoinQueueMythicKey, endLeavePugsDepleteKey);
-          const isTimeToDepleteKey = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY);
+          const timeToDepleteKey = localTime.isBetween(
+            startJoinQueueMythicKey,
+            endLeavePugsDepleteKey,
+          );
+          const isTimeToDepleteKey = !!(await this.redisService.exists(
+            PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY,
+          ));
           if (timeToDepleteKey && !isTimeToDepleteKey) {
-            await this.redisService.set(PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY, 1 , 'EX', 1000 * 60 * 60 * 6);
+            await this.redisService.set(
+              PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY,
+              1,
+              'EX',
+              1000 * 60 * 60 * 6,
+            );
             // TODO add interaction
             return { flag: PEPA_TRIGGER_FLAG.DEPLETE_MYTHIC_KEY };
           }
@@ -120,8 +147,10 @@ export class ChatService {
          */
         if (localTime.weekday() === 2) {
           const [
-            startLootClownChest, endLootClownChest,
-            startAnyGoodLoot, endAnyGoodLoot
+            startLootClownChest,
+            endLootClownChest,
+            startAnyGoodLoot,
+            endAnyGoodLoot,
           ] = [
             localTime.hour(10).minute(0),
             localTime.hour(10).minute(20),
@@ -129,18 +158,40 @@ export class ChatService {
             localTime.hour(11).minute(59),
           ];
 
-          const timeToLoot = localTime.isBetween(startLootClownChest, endLootClownChest);
-          const isTimeToLootTriggered = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST);
+          const timeToLoot = localTime.isBetween(
+            startLootClownChest,
+            endLootClownChest,
+          );
+          const isTimeToLootTriggered = !!(await this.redisService.exists(
+            PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST,
+          ));
           if (timeToLoot && isTimeToLootTriggered) {
-            await this.redisService.set(PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST, 1 , 'EX', 1000 * 60 * 60 * 2);
-            const context = corpus.chest.map(phrase => phrase.random()).join(' ');
+            await this.redisService.set(
+              PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST,
+              1,
+              'EX',
+              1000 * 60 * 60 * 2,
+            );
+            const context = corpus.chest
+              .map((phrase) => phrase.random())
+              .join(' ');
             return { flag: PEPA_TRIGGER_FLAG.LOOT_CLOWN_CHEST, context };
           }
 
-          const anyGoodLoot = localTime.isBetween(startAnyGoodLoot, endAnyGoodLoot);
-          const isTimeAnyGoodLootTriggered = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT);
+          const anyGoodLoot = localTime.isBetween(
+            startAnyGoodLoot,
+            endAnyGoodLoot,
+          );
+          const isTimeAnyGoodLootTriggered = !!(await this.redisService.exists(
+            PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT,
+          ));
           if (anyGoodLoot && !isTimeAnyGoodLootTriggered) {
-            await this.redisService.set(PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT, 1 , 'EX', 1000 * 60 * 60 * 2);
+            await this.redisService.set(
+              PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT,
+              1,
+              'EX',
+              1000 * 60 * 60 * 2,
+            );
             const loot = corpus.loot.random();
             const context = loot.random();
             return { flag: PEPA_TRIGGER_FLAG.ANY_GOOD_LOOT, context };
@@ -156,21 +207,34 @@ export class ChatService {
             localTime.hour(23).minute(59),
           ];
 
-          const raidTimeHoney = localTime.isBetween(startRaidHoney, endRaidHoney);
-          const isTimeToRaidHoney = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY);
+          const raidTimeHoney = localTime.isBetween(
+            startRaidHoney,
+            endRaidHoney,
+          );
+          const isTimeToRaidHoney = !!(await this.redisService.exists(
+            PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY,
+          ));
           if (raidTimeHoney && isTimeToRaidHoney) {
-            const isRaidTriggerHappy = !!await this.redisService.exists(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY);
-            if (!isRaidTriggerHappy) return { flag: PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY };
+            const isRaidTriggerHappy = !!(await this.redisService.exists(
+              PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY,
+            ));
+            if (!isRaidTriggerHappy)
+              return { flag: PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY };
           }
 
           if (raidTimeHoney && !isTimeToRaidHoney) {
-            await this.redisService.set(PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, 1 , 'EX', 1000 * 60 * 60 * 4);
+            await this.redisService.set(
+              PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY,
+              1,
+              'EX',
+              1000 * 60 * 60 * 4,
+            );
 
             const context = [];
 
             for (const [index, phrase] of corpus.raiding.entries()) {
               if (index === 3) {
-                const elIndex = randInBetweenInt(1 , phrase.size);
+                const elIndex = randInBetweenInt(1, phrase.size);
                 const raid = phrase.get(elIndex);
                 const action = corpus.raiding.get(elIndex + 9).random();
 
@@ -182,12 +246,15 @@ export class ChatService {
               context.push(phrase.random());
             }
 
-            return { flag: PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY, context: context.join(' ') };
+            return {
+              flag: PEPA_TRIGGER_FLAG.TIME_TO_RAID_HONEY,
+              context: context.join(' '),
+            };
           }
         }
       }
 
-      if (!isText && hasAttachment && triggerChance > 0.70) {
+      if (!isText && hasAttachment && triggerChance > 0.7) {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
@@ -202,7 +269,7 @@ export class ChatService {
       return { flag: PEPA_TRIGGER_FLAG.EMPTY };
     } catch (e) {
       console.log(e);
-      return{ flag: PEPA_TRIGGER_FLAG.EMPTY };
+      return { flag: PEPA_TRIGGER_FLAG.EMPTY };
     }
   }
 
@@ -210,7 +277,7 @@ export class ChatService {
    * TODO randomize context
    * @param authorName {string}
    */
-  public whoAmIContext (authorName: string): string[] {
+  public whoAmIContext(authorName: string): string[] {
     return [
       `${authorName}: Тебя зовут Пепа и ты любишь играть в Hogwarts Legacy и колдовать заклинания.`,
       `Пепа: Меня зовут Пепа, я люблю колдовать заклинания, ходить в рейды в World of Warcraft и играть в Hogwarts Legacy.`,
@@ -219,7 +286,7 @@ export class ChatService {
     ];
   }
 
-  public didYouKnowThat (authorName: string): string[] {
+  public didYouKnowThat(authorName: string): string[] {
     return [
       `${authorName}: Тебя зовут Пепа и ты любишь играть в World of Warcraft на монахе .`,
       `Пепа: Меня зовут Пепа, я люблю играть в World of Warcraft на монахе.`,
@@ -230,7 +297,7 @@ export class ChatService {
     ];
   }
 
-  public prepareChatText (context: string): string {
+  public prepareChatText(context: string): string {
     const userPrettyText = context.replace(/\n/g, ' ').replace(/\\n/g, ' ');
 
     const checks = ['.', '?', '!'];
@@ -240,14 +307,14 @@ export class ChatService {
     return !isEnding ? `${userPrettyText}.` : userPrettyText;
   }
 
-  public async updateLastActiveMessage () {
+  public async updateLastActiveMessage() {
     const unixNow = dayjs().unix();
     await this.redisService.set(PEPA_CHAT_KEYS.LAST_MESSAGE_AT, unixNow);
     this.logger.debug(`Last message timestamp updated for ${unixNow}`);
   }
 
-  public async getLastActiveMessage (): Promise<boolean> {
-    const localTime = dayjs().tz("Europe/Moscow");
+  public async getLastActiveMessage(): Promise<boolean> {
+    const localTime = dayjs().tz('Europe/Moscow');
 
     const [startRaidHoney, endRaidHoney] = [
       localTime.hour(9).minute(0),
@@ -257,15 +324,21 @@ export class ChatService {
     const isReact = localTime.isBetween(startRaidHoney, endRaidHoney);
 
     const unixNow = localTime.unix();
-    const unixFrom = await this.redisService.get(PEPA_CHAT_KEYS.LAST_MESSAGE_AT);
+    const unixFrom = await this.redisService.get(
+      PEPA_CHAT_KEYS.LAST_MESSAGE_AT,
+    );
     const since = (unixNow - Number(unixFrom)) / 60;
-    this.logger.debug(`${localTime.hour()}:h ${localTime.minute()}:m | ${since} minutes have passed since last message`);
+    this.logger.debug(
+      `${localTime.hour()}:h ${localTime.minute()}:m | ${since} minutes have passed since last message`,
+    );
 
     return since > 120 && isReact;
   }
 
-  public async isIgnoreFlag (): Promise<boolean> {
-    const ignoreMe = (!!await this.redisService.exists(PEPA_CHAT_KEYS.FULL_TILT_IGNORE));
+  public async isIgnoreFlag(): Promise<boolean> {
+    const ignoreMe = !!(await this.redisService.exists(
+      PEPA_CHAT_KEYS.FULL_TILT_IGNORE,
+    ));
     if (ignoreMe) {
       const ttl = await this.redisService.ttl(PEPA_CHAT_KEYS.FULL_TILT_IGNORE);
       this.logger.debug(`Pepa will ignore everything for ${ttl} more seconds`);
@@ -273,16 +346,26 @@ export class ChatService {
     return ignoreMe;
   }
 
-  public async addToContext (channelId: string, username: string, content: string) {
-    await this.redisService.rpush(channelId, `${username}: ${this.prepareChatText(content)}`);
+  public async addToContext(
+    channelId: string,
+    username: string,
+    content: string,
+  ) {
+    await this.redisService.rpush(
+      channelId,
+      `${username}: ${this.prepareChatText(content)}`,
+    );
     const channelContextLength = await this.redisService.llen(channelId);
     if (channelContextLength > 25) await this.redisService.lpop(channelId);
   }
 
-  public async triggerError (): Promise<string> {
+  public async triggerError(): Promise<string> {
     const timeout = randInBetweenInt(30, 600);
     await this.redisService.set(
-      PEPA_CHAT_KEYS.FULL_TILT_IGNORE, 1, 'EX', timeout
+      PEPA_CHAT_KEYS.FULL_TILT_IGNORE,
+      1,
+      'EX',
+      timeout,
     );
     this.logger.error(`Pepa will ignore everything for ${timeout} seconds`);
 
