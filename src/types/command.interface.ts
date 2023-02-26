@@ -8,10 +8,7 @@ export interface ICommand {
 
   readonly guildOnly: boolean;
 
-  readonly slashCommand: Omit<
-    SlashCommandBuilder,
-    'addSubcommand' | 'addSubcommandGroup'
-  >;
+  readonly slashCommand: Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
 
   executeInteraction(interactionArgs: Interaction): Promise<void>;
 }

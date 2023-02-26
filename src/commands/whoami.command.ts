@@ -8,16 +8,14 @@ export const Whoami: ICommand = {
   name: 'whoami',
   description: 'Show creation info',
   guildOnly: true,
-  slashCommand: new SlashCommandBuilder()
-    .setName('whoami')
-    .setDescription('Show creation info'),
+  slashCommand: new SlashCommandBuilder().setName('whoami').setDescription('Show creation info'),
 
   async executeInteraction(interaction: Interaction): Promise<void> {
     if (!interaction.isChatInputCommand()) return;
 
     try {
       const octokit = new Octokit({
-        auth: process.env.GITHUB_TOKEN
+        auth: process.env.GITHUB_TOKEN,
       });
 
       const rainyRepo = {
@@ -25,11 +23,11 @@ export const Whoami: ICommand = {
         repo: 'pepa-chatgpt',
       };
 
-      const { data: repo } = await octokit.request("GET /repos/{owner}/{repo}", rainyRepo);
-      const { data: contributors } = await octokit.request("GET /repos/{owner}/{repo}/contributors", rainyRepo);
+      const { data: repo } = await octokit.request('GET /repos/{owner}/{repo}', rainyRepo);
+      const { data: contributors } = await octokit.request('GET /repos/{owner}/{repo}/contributors', rainyRepo);
 
       const embed = new EmbedBuilder()
-        .setColor(0x0099FF)
+        .setColor(0x0099ff)
         .setTitle(repo.full_name)
         .setURL(repo.html_url)
         .setDescription(repo.description)
@@ -41,10 +39,10 @@ export const Whoami: ICommand = {
       embed.setThumbnail(topContributor.avatar_url);
 
       for (const { login, url, contributions } of contributors) {
-        embed.addFields({ name: `${contributions}`, value: `[${login}](${url})`, inline: true })
+        embed.addFields({ name: `${contributions}`, value: `[${login}](${url})`, inline: true });
       }
 
-      await interaction.reply({ embeds: [ embed ], ephemeral: false });
+      await interaction.reply({ embeds: [embed], ephemeral: false });
     } catch (errorOrException) {
       console.error(errorOrException);
       await interaction.reply({
@@ -52,5 +50,5 @@ export const Whoami: ICommand = {
         ephemeral: true,
       });
     }
-  }
-}
+  },
+};
