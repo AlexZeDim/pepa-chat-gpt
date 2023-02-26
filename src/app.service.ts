@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { GatewayIntentBits, Routes } from 'discord-api-types/v10';
+import { ChannelType, GatewayIntentBits, Routes } from 'discord-api-types/v10';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Job, Queue } from 'bullmq';
 import { Configuration, OpenAIApi } from 'openai';
@@ -14,6 +14,7 @@ import {
   BullWorker,
   BullWorkerProcess,
 } from '@anchan828/nest-bullmq';
+
 import {
   Client,
   Collection,
@@ -180,6 +181,7 @@ export class AppService implements OnApplicationBootstrap {
      * @description Doesn't trigger itself & other bots as-well.
      */
     this.client.on(Events.MessageCreate, async (message) => {
+      if (message.channel.type !== ChannelType.GuildText) return;
       try {
         let isIgnore = await this.chatService.isIgnoreFlag();
 
@@ -258,9 +260,9 @@ export class AppService implements OnApplicationBootstrap {
         }
 
         if (flag === PEPA_TRIGGER_FLAG.MESSAGE) {
-          await message.channel.sendTyping();
+          await (message.channel as TextChannel).sendTyping();
           await setTimeout(randInBetweenInt(1, 4) * 1000);
-          await message.channel.sendTyping();
+          await (message.channel as TextChannel).sendTyping();
 
           this.logger.log(
             `Event: ${Events.MessageCreate} has been triggered by: ${message.id}`,
