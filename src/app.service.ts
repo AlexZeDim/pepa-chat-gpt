@@ -9,20 +9,9 @@ import { ChatService } from './chat/chat.service';
 import { setTimeout } from 'node:timers/promises';
 import { ICommand } from './types';
 import { Whoami } from './commands/whoami.command';
-import {
-  BullQueueInject,
-  BullWorker,
-  BullWorkerProcess,
-} from '@anchan828/nest-bullmq';
+import { BullQueueInject, BullWorker, BullWorkerProcess } from '@anchan828/nest-bullmq';
 
-import {
-  Client,
-  Collection,
-  Events,
-  Partials,
-  REST,
-  TextChannel,
-} from 'discord.js';
+import { Client, Collection, Events, Partials, REST, TextChannel } from 'discord.js';
 
 import {
   chatQueue,
@@ -146,9 +135,7 @@ export class AppService implements OnApplicationBootstrap {
       }
     }*/
 
-    this.storageEmojisLength = await this.redisService.llen(
-      PEPA_STORAGE_KEYS.EMOJIS,
-    );
+    this.storageEmojisLength = await this.redisService.llen(PEPA_STORAGE_KEYS.EMOJIS);
     this.logger.log(`Inserted ${this.storageEmojisLength} pepe emoji!`);
   }
 
@@ -158,24 +145,21 @@ export class AppService implements OnApplicationBootstrap {
       await this.storage();
     });
 
-    this.client.on(
-      Events.InteractionCreate,
-      async (interaction): Promise<void> => {
-        if (!interaction.isCommand()) return;
-        try {
-          const command = this.commandsMessage.get(interaction.commandName);
-          if (!command) return;
+    this.client.on(Events.InteractionCreate, async (interaction): Promise<void> => {
+      if (!interaction.isCommand()) return;
+      try {
+        const command = this.commandsMessage.get(interaction.commandName);
+        if (!command) return;
 
-          await command.executeInteraction(interaction);
-        } catch (errorException) {
-          this.logger.error(errorException);
-          await interaction.reply({
-            content: 'There was an error while executing this command!',
-            ephemeral: true,
-          });
-        }
-      },
-    );
+        await command.executeInteraction(interaction);
+      } catch (errorException) {
+        this.logger.error(errorException);
+        await interaction.reply({
+          content: 'There was an error while executing this command!',
+          ephemeral: true,
+        });
+      }
+    });
 
     /**
      * @description Doesn't trigger itself & other bots as-well.
@@ -185,8 +169,7 @@ export class AppService implements OnApplicationBootstrap {
       try {
         let isIgnore = await this.chatService.isIgnoreFlag();
 
-        if (message.author.id === this.client.user.id || message.author.bot)
-          return;
+        if (message.author.id === this.client.user.id || message.author.bot) return;
 
         if (message.channelId === '217532087001939969') {
           await this.chatService.updateLastActiveMessage();
@@ -198,11 +181,7 @@ export class AppService implements OnApplicationBootstrap {
         let isMentioned: boolean;
 
         if (content) {
-          await this.chatService.addToContext(
-            channelId,
-            author.username,
-            content,
-          );
+          await this.chatService.addToContext(channelId, author.username, content);
         }
         /**
          * @description React only for specific channels
@@ -229,34 +208,19 @@ export class AppService implements OnApplicationBootstrap {
         }
 
         if (isMentioned) {
-          await this.redisService.set(
-            PEPA_CHAT_KEYS.MENTIONED,
-            1,
-            'EX',
-            randInBetweenInt(7, 10),
-          );
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(7, 10));
         }
 
         if (message.channelId === '1051512756664279092') {
-          const wasMentioned = !!(await this.redisService.exists(
-            PEPA_CHAT_KEYS.MENTIONED,
-          ));
+          const wasMentioned = !!(await this.redisService.exists(PEPA_CHAT_KEYS.MENTIONED));
           if (wasMentioned) isMentioned = true;
         }
 
-        const { flag } = await this.chatService.diceRollerFullHouse(
-          !!content,
-          !!message.attachments.size,
-          isMentioned,
-        );
+        const { flag } = await this.chatService.diceRollerFullHouse(!!content, !!message.attachments.size, isMentioned);
 
         if (flag === PEPA_TRIGGER_FLAG.EMOJI) {
-          await this.chatService.chatPepeReaction(
-            this.client,
-            message,
-            0,
-            this.storageEmojisLength,
-          );
+          if (message.author.id === '264081682636734465') return;
+          await this.chatService.chatPepeReaction(this.client, message, 0, this.storageEmojisLength);
         }
 
         if (flag === PEPA_TRIGGER_FLAG.MESSAGE) {
@@ -264,15 +228,8 @@ export class AppService implements OnApplicationBootstrap {
           await setTimeout(randInBetweenInt(1, 4) * 1000);
           await (message.channel as TextChannel).sendTyping();
 
-          this.logger.log(
-            `Event: ${Events.MessageCreate} has been triggered by: ${message.id}`,
-          );
-          await this.redisService.set(
-            PEPA_CHAT_KEYS.MENTIONED,
-            1,
-            'EX',
-            randInBetweenInt(25, 70),
-          );
+          this.logger.log(`Event: ${Events.MessageCreate} has been triggered by: ${message.id}`);
+          await this.redisService.set(PEPA_CHAT_KEYS.MENTIONED, 1, 'EX', randInBetweenInt(25, 70));
 
           await this.queue.add(message.id, {
             id,
@@ -288,23 +245,16 @@ export class AppService implements OnApplicationBootstrap {
     });
   }
 
-  @Timeout(60_000)
+  @Timeout(100_000)
   async idleReaction() {
     try {
       const isMedia = await this.chatService.getLastActiveMessage();
       // TODO add inactive interaction
 
-      const { flag, context } = await this.chatService.diceRollerFullHouse(
-        false,
-        false,
-        false,
-        isMedia,
-      );
+      const { flag, context } = await this.chatService.diceRollerFullHouse(false, false, false, isMedia);
       if (context) {
         this.logger.debug(`Flag ${flag} triggered`);
-        this.channel = (await this.client.channels.cache.get(
-          '217532087001939969',
-        )) as TextChannel;
+        this.channel = (await this.client.channels.cache.get('217532087001939969')) as TextChannel;
         await this.channel.send(context);
       }
 
@@ -318,15 +268,11 @@ export class AppService implements OnApplicationBootstrap {
         if (role && role.members.size) {
           const guildMemberToTag = role.members.random();
 
-          if (
-            await this.redisService.exists(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY)
-          ) {
+          if (await this.redisService.exists(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY)) {
             return;
           }
 
-          this.logger.debug(
-            `Trying to fetch ${guildMemberToTag.user.username}`,
-          );
+          this.logger.debug(`Trying to fetch ${guildMemberToTag.user.username}`);
           const guildMemberWithPresence = await guild.members.fetch({
             user: guildMemberToTag.user.id,
             withPresences: true,
@@ -341,23 +287,12 @@ export class AppService implements OnApplicationBootstrap {
             return;
           }
           for (const activity of guildMemberWithPresence.presence.activities) {
-            this.logger.debug(
-              `Scan ${guildMemberWithPresence.user.username} with activity ${activity.name}`,
-            );
+            this.logger.debug(`Scan ${guildMemberWithPresence.user.username} with activity ${activity.name}`);
             if (activity.name === 'World of Warcraft') {
-              this.channel = (await this.client.channels.cache.get(
-                '217532087001939969',
-              )) as TextChannel;
+              this.channel = (await this.client.channels.cache.get('217532087001939969')) as TextChannel;
               const raidTime = corpus.hardcore.random();
-              await this.channel.send(
-                `<@${guildMemberWithPresence.user.id}> ${raidTime}`,
-              );
-              await this.redisService.set(
-                PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY,
-                1,
-                'EX',
-                randInBetweenInt(1200, 3600),
-              );
+              await this.channel.send(`<@${guildMemberWithPresence.user.id}> ${raidTime}`);
+              await this.redisService.set(PEPA_TRIGGER_FLAG.RAID_TRIGGER_HAPPY, 1, 'EX', randInBetweenInt(1200, 3600));
               break;
             }
           }
@@ -369,9 +304,7 @@ export class AppService implements OnApplicationBootstrap {
   }
 
   @BullWorkerProcess(chatQueue.workerOptions)
-  public async process(
-    job: Job<MessageJobInterface, MessageJobResInterface>,
-  ): Promise<MessageJobResInterface> {
+  public async process(job: Job<MessageJobInterface, MessageJobResInterface>): Promise<MessageJobResInterface> {
     try {
       this.logger.log(`Job ${job.id} has been started!`);
 
@@ -381,22 +314,16 @@ export class AppService implements OnApplicationBootstrap {
 
       const userName: string = author.username;
 
-      const newYear = !!(await this.redisService.exists(
-        PEPA_TRIGGER_FLAG.NEW_YEAR,
-      ));
+      const newYear = !!(await this.redisService.exists(PEPA_TRIGGER_FLAG.NEW_YEAR));
 
       if (reference) {
         /**
          * @description reference exists but no original message found
          * @description if found, we join dialog via originalPosterUserId
          */
-        const originalRefMessageId = await this.redisService.get(
-          reference.messageId,
-        );
+        const originalRefMessageId = await this.redisService.get(reference.messageId);
         if (!originalRefMessageId) {
-          this.logger.warn(
-            `We have found a reference link, but seems no reference dialog. Ok, SKIP...`,
-          );
+          this.logger.warn(`We have found a reference link, but seems no reference dialog. Ok, SKIP...`);
           // TODO add ref to context
         }
       }
@@ -407,22 +334,15 @@ export class AppService implements OnApplicationBootstrap {
        * @description anyway, refresh TTL start key
        */
       const messageContextNumber = await this.redisService.llen(channelId);
-      this.logger.log(
-        `Dialog context in ${channelId} channel has ${messageContextNumber} messages`,
-      );
+      this.logger.log(`Dialog context in ${channelId} channel has ${messageContextNumber} messages`);
 
       if (messageContextNumber) {
         const storedContext = await this.redisService.lrange(channelId, -2, -1);
         dialogContext = [...dialogContext, ...storedContext];
       }
 
-      this.channel = (await this.client.channels.cache.get(
-        channelId,
-      )) as TextChannel;
-      if (!this.channel)
-        this.channel = (await this.client.channels.fetch(
-          channelId,
-        )) as TextChannel;
+      this.channel = (await this.client.channels.cache.get(channelId)) as TextChannel;
+      if (!this.channel) this.channel = (await this.client.channels.fetch(channelId)) as TextChannel;
 
       let chatResponses;
 
@@ -431,12 +351,8 @@ export class AppService implements OnApplicationBootstrap {
        * @description happy new year 2023
        */
       if (newYear) {
-        this.channel = (await this.client.channels.cache.get(
-          '217532087001939969',
-        )) as TextChannel;
-        dialogContext = [
-          'Пепа, сочини поздравление с новым 2023 годом для монахов играющих в World of Warcraft на 1900 символов',
-        ];
+        this.channel = (await this.client.channels.cache.get('217532087001939969')) as TextChannel;
+        dialogContext = ['Пепа, сочини поздравление с новым 2023 годом для монахов играющих в World of Warcraft на 1900 символов'];
       }
 
       try {
@@ -459,9 +375,7 @@ export class AppService implements OnApplicationBootstrap {
 
         chatResponses = data;
       } catch (chatEngineError) {
-        this.logger.error(
-          `${chatEngineError.response.status} : ${chatEngineError.response.statusText}`,
-        );
+        this.logger.error(`${chatEngineError.response.status} : ${chatEngineError.response.statusText}`);
 
         const backoffReply = await this.chatService.triggerError();
 
@@ -470,19 +384,13 @@ export class AppService implements OnApplicationBootstrap {
         return { response: backoffReply, channelId };
       }
 
-      if (
-        !chatResponses ||
-        !chatResponses.choices ||
-        !chatResponses.choices.length
-      ) {
+      if (!chatResponses || !chatResponses.choices || !chatResponses.choices.length) {
         const mediaReply = corpus.media.random();
 
         await this.channel.send(mediaReply);
       }
 
-      const responseChoice = chatResponses.choices.reduce((prev, current) =>
-        prev.index > current.index ? prev : current,
-      );
+      const responseChoice = chatResponses.choices.reduce((prev, current) => (prev.index > current.index ? prev : current));
 
       const pepaNaming = new RegExp('пе[а-я]*:', 'i');
 

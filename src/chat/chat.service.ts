@@ -181,15 +181,15 @@ export class ChatService {
         }
       }
 
-      if (!isText && hasAttachment && triggerChance > 0.7) {
+      if (!isText && hasAttachment && triggerChance > 0.95) {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
-      if ((isText && triggerChance <= 0.06) || isMentioned) {
+      if ((isText && triggerChance <= 0.01) || isMentioned) {
         return { flag: PEPA_TRIGGER_FLAG.MESSAGE };
       }
 
-      if (isText && triggerChance >= 0.94) {
+      if (isText && triggerChance >= 0.98) {
         return { flag: PEPA_TRIGGER_FLAG.EMOJI };
       }
 
