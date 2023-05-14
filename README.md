@@ -2,7 +2,7 @@
   <img src="https://user-images.githubusercontent.com/907696/221422670-61897db8-4bbc-4436-969f-bdc5cf194275.svg" width="200"/>
 </p>
 
-## Pepa Chat-GPT3 
+## Pepa Chat-GPT-3 
 
 Pepa is a discord chatbot, which uses OpenAI ChatGPT-3 model as an engine for text communications, some of its features are bound to the exact guild server for which he was developed. But his main feature is to communicate via text message is free-to-use.
 
